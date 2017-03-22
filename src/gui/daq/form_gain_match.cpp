@@ -30,7 +30,7 @@
 #include "qt_util.h"
 #include "dialog_spectrum.h"
 
-#include "optimizer.h"
+#include "optimizer_ROOT.h"
 
 using namespace Qpx;
 
@@ -45,6 +45,8 @@ FormGainMatch::FormGainMatch(ThreadRunner& thread, XMLableDB<Detector>& detector
 {
   ui->setupUi(this);
   this->setWindowTitle("Gain matching");
+
+  response_function_ = std::make_shared<Polynomial>();
 
   connect(&gm_runner_thread_, SIGNAL(runComplete()), this, SLOT(run_completed()));
   connect(&gm_plot_thread_, SIGNAL(plot_ready()), this, SLOT(new_daq_data()));
@@ -428,14 +430,16 @@ void FormGainMatch::do_post_processing() {
 
   double predicted = std::numeric_limits<double>::quiet_NaN();
 
-  response_function_ = Polynomial();
-  response_function_.add_coeff(0, -50, 50, 1);
-  response_function_.add_coeff(1, -50, 50, 1);
+  response_function_ = std::make_shared<Polynomial>();
+  response_function_->add_coeff(0, -50, 50, 1);
+  response_function_->add_coeff(1, -50, 50, 1);
   if (gains.size() > 2)
-    response_function_.add_coeff(2, -50, 50, 1);
-  Optimizer::fit(response_function_, gains, positions,
+    response_function_->add_coeff(2, -50, 50, 1);
+
+  auto optimizer = std::make_shared<Qpx::OptimizerROOT>();
+  optimizer->fit(response_function_, gains, positions,
                          std::vector<double>(), std::vector<double>());
-  predicted = response_function_.eval_inverse(peak_ref_.center().value() /*, ui->doubleThreshold->value() / 4.0*/);
+  predicted = response_function_->eval_inverse(peak_ref_.center().value() /*, ui->doubleThreshold->value() / 4.0*/);
 
   DBG << "<FormGainMatch> Prediction " << predicted;
 
@@ -546,7 +550,7 @@ void FormGainMatch::new_daq_data() {
 
 void FormGainMatch::on_pushStart_clicked()
 {
-  response_function_ = Polynomial();
+  response_function_ = std::make_shared<Polynomial>();
   project_->clear();
 
   peak_ref_ = Peak();
@@ -711,7 +715,7 @@ void FormGainMatch::display_data()
 
     for (double i=xmin; i < xmax; i+=step) {
       xx.push_back(i);
-      yy.push_back(response_function_.eval(i));
+      yy.push_back(response_function_->eval(i));
     }
 
     std::set<double> chosen_peaks_chan;

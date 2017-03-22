@@ -44,11 +44,6 @@ find_package(Boost COMPONENTS system filesystem thread timer date_time
              program_options log log_setup regex REQUIRED)
 link_directories( ${BOOST_LIBRARY_DIRS} )
 
-#ROOT
-list(APPEND CMAKE_PREFIX_PATH $ENV{ROOTSYS})
-find_package(ROOT REQUIRED COMPONENTS RIO Net)
-include(${ROOT_USE_FILE})
-
 
 file(GLOB_RECURSE engine_SOURCES *.cpp)
 file(GLOB_RECURSE engine_HEADERS *.h *.hpp)
@@ -63,7 +58,6 @@ include_directories(
   ${engine_INCLUDE_DIRS}
   ${h5_INCLUDE_DIRS}
   ${HDF5_INCLUDE_DIRS}
-  ${ROOT_INCLUDE_DIR}
   ${Boost_INCLUDE_DIRS}
 )
 
@@ -78,7 +72,6 @@ target_link_libraries(
   ${PROJECT_NAME}
   ${HDF5_LIBRARIES}
   ${Boost_LIBRARIES}
-  ${ROOT_LIBRARIES}
 )
 
 ADD_DEPENDENCIES(${PROJECT_NAME} compiletime)
@@ -89,7 +82,6 @@ set(${PROJECT_NAME}_INCLUDE_DIRS
     ${h5_INCLUDE_DIRS}
     ${HDF5_INCLUDE_DIRS}
     ${Boost_INCLUDE_DIRS}
-    ${ROOT_INCLUDE_DIR}
     CACHE INTERNAL "${PROJECT_NAME}: Include Directories" FORCE)
 
 set(${PROJECT_NAME}_LIBRARIES

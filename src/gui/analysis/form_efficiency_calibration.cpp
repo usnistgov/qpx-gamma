@@ -35,7 +35,7 @@
 #include "log_inverse.h"
 #include "effit.h"
 
-#include "optimizer.h"
+#include "optimizer_ROOT.h"
 
 using namespace Qpx;
 
@@ -559,7 +559,8 @@ void FormEfficiencyCalibration::on_pushFit_clicked()
       p->add_coeff(i, -50, 50, 0);
   }
 
-  Optimizer::fit(*p, xx, yy, std::vector<double>(), std::vector<double>());
+  auto optimizer = std::make_shared<Qpx::OptimizerROOT>();
+  optimizer->fit(p, xx, yy, std::vector<double>(), std::vector<double>());
 
   if (p->coeff_count())
   {
@@ -667,7 +668,8 @@ void FormEfficiencyCalibration::on_pushFit_2_clicked()
       p->add_coeff(i, -50, 50, 0);
   }
 
-  Optimizer::fit(*p, xx, yy, std::vector<double>(), std::vector<double>());
+  auto optimizer = std::make_shared<Qpx::OptimizerROOT>();
+  optimizer->fit(p, xx, yy, std::vector<double>(), std::vector<double>());
 
   if (p->coeff_count())
   {
@@ -713,7 +715,8 @@ void FormEfficiencyCalibration::on_pushFitEffit_clicked()
   }
 
   auto p = std::make_shared<Effit>();
-  Optimizer::fit(*p, xx, yy, std::vector<double>(), std::vector<double>());
+  auto optimizer = std::make_shared<Qpx::OptimizerROOT>();
+  optimizer->fit(p, xx, yy, std::vector<double>(), std::vector<double>());
 
 //  new_calibration_.type_ = "Efficiency";
   new_calibration_ = Calibration(fit_data_.settings().bits_);

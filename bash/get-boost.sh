@@ -12,8 +12,7 @@ default_boost_version=$(eval $exp)
 echo default boost version on system = $default_boost_version
 
 if [ "$default_boost_version" -ge "$minimum_boost_version" ]; then
-  exp="sudo apt-get --yes install libboost-all-dev"
-  eval $exp
+  sudo apt-get --yes install libboost-all-dev
   exit
 fi;
 
@@ -28,11 +27,13 @@ done
 echo highest available boost version = $max_boost_version
 
 if [ "$max_boost_version" -ge "$minimum_boost_version" ]; then
-  exp="sudo apt-get --yes install libboost\d.${max_boost_version}-all-dev"
-  eval $exp
+  sudo apt-get --yes install libboost\d.${max_boost_version}-all-dev
   exit
 fi;
 
+cl1="1."
+cl2=".0"
+cl=$cl1$vnum$cl2
 
 zl1="boost_1_"
 zl2="_0"

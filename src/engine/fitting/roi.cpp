@@ -20,8 +20,6 @@
  *
  ******************************************************************************/
 
-#include "optimizer.h"
-
 #include "roi.h"
 #include "gaussian.h"
 #include "custom_logger.h"
@@ -97,12 +95,12 @@ void ROI::set_data(const Finder &parentfinder, double l, double r)
   render();
 }
 
-bool ROI::refit(boost::atomic<bool>& interruptor)
+bool ROI::refit(OptimizerPtr optimizer, boost::atomic<bool>& interruptor)
 {
   if (peaks_.empty())
-    return auto_fit(interruptor);
+    return auto_fit(optimizer, interruptor);
 
-  if (!rebuild(interruptor))
+  if (!rebuild(optimizer, interruptor))
     return false;
 
   save_current_fit("Refit");
@@ -110,7 +108,7 @@ bool ROI::refit(boost::atomic<bool>& interruptor)
 }
 
 
-bool ROI::auto_fit(boost::atomic<bool>& interruptor)
+bool ROI::auto_fit(OptimizerPtr optimizer, boost::atomic<bool>& interruptor)
 {
   peaks_.clear();
   finder_.y_resid_ = finder_.y_;
@@ -135,8 +133,7 @@ bool ROI::auto_fit(boost::atomic<bool>& interruptor)
       std::vector<double> y_pk = std::vector<double>(y_nobkg.begin() + finder_.lefts[i], y_nobkg.begin() + finder_.rights[i] + 1);
 
       Gaussian gaussian;
-//      gaussian.fit(x_pk, y_pk);
-      Optimizer::fit(gaussian, x_pk, y_pk);
+      optimizer->fit(gaussian, x_pk, y_pk);
 
       if (
           gaussian.height().value().finite() && (gaussian.height().value().value() > 0) &&
@@ -153,18 +150,18 @@ bool ROI::auto_fit(boost::atomic<bool>& interruptor)
       finder_.settings_.sum4_only = true;
   }
 
-  if (!rebuild(interruptor))
+  if (!rebuild(optimizer, interruptor))
     return false;
 
   save_current_fit("Autofit");
 
   if (finder_.settings_.resid_auto)
-    iterative_fit(interruptor);
+    iterative_fit(optimizer, interruptor);
 
   return true;
 }
 
-void ROI::iterative_fit(boost::atomic<bool>& interruptor)
+void ROI::iterative_fit(OptimizerPtr optimizer, boost::atomic<bool>& interruptor)
 {
   if (!finder_.settings_.cali_fwhm_.valid() || peaks_.empty())
     return;
@@ -177,7 +174,7 @@ void ROI::iterative_fit(boost::atomic<bool>& interruptor)
 
     DBG << "Attempting add from resid with " << peaks_.size() << " peaks";
 
-    if (!new_fit.add_from_resid(interruptor, -1)) {
+    if (!new_fit.add_from_resid(optimizer, interruptor, -1)) {
       //      DBG << "    failed add from resid";
       break;
     }
@@ -199,7 +196,7 @@ void ROI::iterative_fit(boost::atomic<bool>& interruptor)
   }
 }
 
-bool ROI::add_from_resid(boost::atomic<bool>& interruptor, int32_t centroid_hint)
+bool ROI::add_from_resid(OptimizerPtr optimizer, boost::atomic<bool>& interruptor, int32_t centroid_hint)
 {
   if (finder_.filtered.empty())
     return false;
@@ -214,7 +211,7 @@ bool ROI::add_from_resid(boost::atomic<bool>& interruptor, int32_t centroid_hint
       std::vector<double> y_pk = std::vector<double>(finder_.y_resid_.begin() + finder_.lefts[j],
                                                      finder_.y_resid_.begin() + finder_.rights[j] + 1);
       Gaussian gaussian;
-      Optimizer::fit(gaussian, x_pk, y_pk);
+      optimizer->fit(gaussian, x_pk, y_pk);
 
       bool too_close = false;
 
@@ -262,7 +259,7 @@ bool ROI::add_from_resid(boost::atomic<bool>& interruptor, int32_t centroid_hint
   std::vector<double> y_pk = std::vector<double>(finder_.y_resid_.begin() + finder_.lefts[target_peak],
                                                  finder_.y_resid_.begin() + finder_.rights[target_peak] + 1);
   Gaussian gaussian;
-  Optimizer::fit(gaussian, x_pk, y_pk);
+  optimizer->fit(gaussian, x_pk, y_pk);
 
   if (
       gaussian.height().value().finite() && (gaussian.height().value().value() > 0) &&
@@ -274,7 +271,7 @@ bool ROI::add_from_resid(boost::atomic<bool>& interruptor, int32_t centroid_hint
     Peak fitted(Hypermet(gaussian, finder_.settings_), SUM4(), finder_.settings_);
     peaks_[fitted.center().value()] = fitted;
 
-    rebuild(interruptor);
+    rebuild(optimizer, interruptor);
     return true;
   }
   else
@@ -382,6 +379,7 @@ bool ROI::override_energy(double peakID, double energy)
 
 bool ROI::add_peak(const Finder &parentfinder,
                    double left, double right,
+                   OptimizerPtr optimizer,
                    boost::atomic<bool>& interruptor)
 {
   uint16_t center_prelim = (left+right) * 0.5; //assume down the middle
@@ -389,7 +387,7 @@ bool ROI::add_peak(const Finder &parentfinder,
   if (overlaps(left) && overlaps(right)) {
     ROI new_fit = *this;
 
-    if (!finder_.settings_.sum4_only && new_fit.add_from_resid(interruptor, center_prelim))
+    if (!finder_.settings_.sum4_only && new_fit.add_from_resid(optimizer, interruptor, center_prelim))
     {
       *this = new_fit;
       save_current_fit("Added from residuals");
@@ -429,21 +427,21 @@ bool ROI::add_peak(const Finder &parentfinder,
       save_current_fit("Manually added " + fitted.energy().to_string());
       return true;
     }
-    else if (new_fit.add_from_resid(interruptor, finder_.find_index(center_prelim)))
+    else if (new_fit.add_from_resid(optimizer, interruptor, finder_.find_index(center_prelim)))
     {
       *this = new_fit;
       save_current_fit("Added from residuals");
       return true;
     }
     else
-      return auto_fit(interruptor);
+      return auto_fit(optimizer, interruptor);
   }
 
   DBG << "<ROI> cannot add to empty ROI";
   return false;
 }
 
-bool ROI::remove_peaks(const std::set<double> &pks, boost::atomic<bool>& interruptor)
+bool ROI::remove_peaks(const std::set<double> &pks, OptimizerPtr optimizer, boost::atomic<bool>& interruptor)
 {
   bool found = false;
   for (auto &q : pks)
@@ -453,7 +451,7 @@ bool ROI::remove_peaks(const std::set<double> &pks, boost::atomic<bool>& interru
   if (!found)
     return false;
 
-  if (peaks_.size() && !rebuild(interruptor))
+  if (peaks_.size() && !rebuild(optimizer, interruptor))
     return false;
 
   render();
@@ -522,7 +520,7 @@ void ROI::save_current_fit(std::string description)
   current_fit_ = fits_.size() - 1;
 }
 
-bool ROI::rebuild(boost::atomic<bool>& interruptor)
+bool ROI::rebuild(OptimizerPtr optimizer, boost::atomic<bool>& interruptor)
 {
   hr_x.clear();
   hr_x_nrg.clear();
@@ -540,9 +538,9 @@ bool ROI::rebuild(boost::atomic<bool>& interruptor)
 
   bool success = false;
   if (hypermet_fit)
-    success = rebuild_as_hypermet(interruptor);
+    success = rebuild_as_hypermet(optimizer, interruptor);
   else
-    success = rebuild_as_gaussian(interruptor);
+    success = rebuild_as_gaussian(optimizer, interruptor);
 
   if (!success)
     return false;
@@ -551,7 +549,7 @@ bool ROI::rebuild(boost::atomic<bool>& interruptor)
   return true;
 }
 
-bool ROI::rebuild_as_hypermet(boost::atomic<bool>& interruptor)
+bool ROI::rebuild_as_hypermet(OptimizerPtr optimizer, boost::atomic<bool>& interruptor)
 {
   CustomTimer timer(true);
 
@@ -578,7 +576,7 @@ bool ROI::rebuild_as_hypermet(boost::atomic<bool>& interruptor)
 //                                                   old_hype, background_,
 //                                                   finder_.settings_);
 
-  std::vector<Hypermet> hype = Optimizer::fit_multiplet(finder_.x_, finder_.y_,
+  std::vector<Hypermet> hype = optimizer->fit_multiplet(finder_.x_, finder_.y_,
                                                         old_hype, background_,
                                                         finder_.settings_);
 
@@ -594,7 +592,7 @@ bool ROI::rebuild_as_hypermet(boost::atomic<bool>& interruptor)
   return true;
 }
 
-bool ROI::rebuild_as_gaussian(boost::atomic<bool>& interruptor)
+bool ROI::rebuild_as_gaussian(OptimizerPtr optimizer, boost::atomic<bool>& interruptor)
 {
   CustomTimer timer(true);
 
@@ -619,11 +617,7 @@ bool ROI::rebuild_as_gaussian(boost::atomic<bool>& interruptor)
   if (old_gauss.empty())
     return false;
 
-//  std::vector<Gaussian> gauss = Gaussian::fit_multi(finder_.x_, finder_.y_,
-//                                                    old_gauss, background_,
-//                                                    finder_.settings_);
-
-  std::vector<Gaussian> gauss = Optimizer::fit_multiplet(finder_.x_, finder_.y_,
+  std::vector<Gaussian> gauss = optimizer->fit_multiplet(finder_.x_, finder_.y_,
                                                          old_gauss, background_,
                                                          finder_.settings_);
 
@@ -711,7 +705,7 @@ std::vector<double> ROI::remove_background()
 }
 
 bool ROI::adjust_LB(const Finder &parentfinder, double left, double right,
-                    boost::atomic<bool>& interruptor)
+                     OptimizerPtr optimizer, boost::atomic<bool>& interruptor)
 {
   size_t Lidx = parentfinder.find_index(left);
   size_t Ridx = parentfinder.find_index(right);
@@ -729,12 +723,13 @@ bool ROI::adjust_LB(const Finder &parentfinder, double left, double right,
   init_background();
   cull_peaks();
   render();
-  rebuild(interruptor);
+  rebuild(optimizer, interruptor);
   save_current_fit("Left baseline adjusted");
   return true;
 }
 
-bool ROI::adjust_RB(const Finder &parentfinder, double left, double right, boost::atomic<bool>& interruptor) {
+bool ROI::adjust_RB(const Finder &parentfinder, double left, double right,
+                    OptimizerPtr optimizer, boost::atomic<bool>& interruptor) {
   size_t Lidx = parentfinder.find_index(left);
   size_t Ridx = parentfinder.find_index(right);
   if (Lidx >= Ridx)
@@ -751,7 +746,7 @@ bool ROI::adjust_RB(const Finder &parentfinder, double left, double right, boost
   init_background();
   cull_peaks();
   render();
-  rebuild(interruptor);
+  rebuild(optimizer, interruptor);
   save_current_fit("Right baseline adjusted");
   return true;
 }

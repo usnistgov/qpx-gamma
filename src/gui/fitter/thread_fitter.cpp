@@ -23,6 +23,7 @@
 #include "thread_fitter.h"
 #include "custom_timer.h"
 #include "custom_logger.h"
+#include "optimizer_ROOT.h"
 
 ThreadFitter::ThreadFitter(QObject *parent) :
   QThread(parent),
@@ -30,6 +31,7 @@ ThreadFitter::ThreadFitter(QObject *parent) :
   running_(false)
 {
   action_ = kIdle;
+  optimizer_ = std::make_shared<Qpx::OptimizerROOT>();
   start(HighPriority);
 }
 
@@ -189,7 +191,7 @@ void ThreadFitter::run() {
       std::shared_ptr<CustomTimer> timer(new CustomTimer(true));
       for (auto &q : fitter_.regions()) {
 //        DBG << "Fitting " << q.second.L();
-        fitter_.auto_fit(q.first, interruptor_);
+        fitter_.auto_fit(q.first, optimizer_, interruptor_);
 //        q.second.auto_fit(interruptor_);
         current++;
         if (timer->s() > 2) {
@@ -206,22 +208,22 @@ void ThreadFitter::run() {
       emit fitting_done();
       action_ = kIdle;
     } else if (action_ == kRefit) {
-      if (fitter_.refit_region(target_, interruptor_))
+      if (fitter_.refit_region(target_, optimizer_, interruptor_))
         emit fit_updated(fitter_);
       emit fitting_done();
       action_ = kIdle;
     } else if (action_ == kAddPeak) {
-      fitter_.add_peak(LL, RR, interruptor_);
+      fitter_.add_peak(LL, RR, optimizer_, interruptor_);
       emit fit_updated(fitter_);
       emit fitting_done();
       action_ = kIdle;
     } else if (action_ == kAdjustLB) {
-      if (fitter_.adj_LB(target_, LL, RR, interruptor_))
+      if (fitter_.adj_LB(target_, LL, RR, optimizer_, interruptor_))
         emit fit_updated(fitter_);
       emit fitting_done();
       action_ = kIdle;
     } else if (action_ == kAdjustRB) {
-      if (fitter_.adj_RB(target_, LL, RR, interruptor_))
+      if (fitter_.adj_RB(target_, LL, RR, optimizer_, interruptor_))
         emit fit_updated(fitter_);
       emit fitting_done();
       action_ = kIdle;
@@ -231,12 +233,12 @@ void ThreadFitter::run() {
       emit fitting_done();
       action_ = kIdle;
     } else if (action_ == kMergeRegions) {
-      if (fitter_.merge_regions(LL, RR, interruptor_))
+      if (fitter_.merge_regions(LL, RR, optimizer_, interruptor_))
         emit fit_updated(fitter_);
       emit fitting_done();
       action_ = kIdle;
     } else if (action_ == kRemovePeaks) {
-      if (fitter_.remove_peaks(chosen_peaks_, interruptor_))
+      if (fitter_.remove_peaks(chosen_peaks_, optimizer_, interruptor_))
         emit fit_updated(fitter_);
       emit fitting_done();
       action_ = kIdle;

@@ -27,7 +27,7 @@
 #include "qt_util.h"
 #include <QSettings>
 
-#include "optimizer.h"
+#include "optimizer_ROOT.h"
 
 FormEnergyCalibration::FormEnergyCalibration(XMLableDB<Qpx::Detector>& dets, Qpx::Fitter &fit, QWidget *parent) :
   QWidget(parent),
@@ -312,7 +312,8 @@ void FormEnergyCalibration::on_pushFit_clicked()
   for (int i=2; i <= ui->spinTerms->value(); ++i)
     p->add_coeff(i, -5, 5, 0);
 
-  Qpx::Optimizer::fit(*p, x, y, std::vector<double>(), std::vector<double>());
+  auto optimizer = std::make_shared<Qpx::OptimizerROOT>();
+  optimizer->fit(p, x, y, std::vector<double>(), std::vector<double>());
 
   if (p->coeff_count())
   {

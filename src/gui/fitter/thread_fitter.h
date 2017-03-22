@@ -25,6 +25,7 @@
 #include <QThread>
 #include <QMutex>
 #include "fitter.h"
+#include "optimizer.h"
 
 enum FitterAction {kFit, kStop, kIdle, kAddPeak, kRemovePeaks, kRefit,
                   kAdjustLB, kAdjustRB, kOverrideSettingsROI, kMergeRegions};
@@ -58,6 +59,8 @@ protected:
 
 private:
   Qpx::Fitter fitter_;
+
+  Qpx::OptimizerPtr optimizer_;
 
   QMutex mutex_;
   FitterAction action_;

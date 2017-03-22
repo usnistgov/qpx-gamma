@@ -8,7 +8,7 @@ fi
 
 cd "$( dirname "${BASH_SOURCE[0]}" )/../.."
 
-sudo apt-get install git dpkg-dev cmake g++ gcc binutils libx11-dev libxpm-dev libxft-dev libxext-dev
+sudo apt-get --yes install git dpkg-dev cmake g++ gcc binutils libx11-dev libxpm-dev libxft-dev libxext-dev
 
 git clone http://root.cern.ch/git/root.git
 cd root

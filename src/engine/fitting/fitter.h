@@ -15,9 +15,6 @@
  * Author(s):
  *      Martin Shetty (NIST)
  *
- * Description:
- *      Fitter
- *
  ******************************************************************************/
 
 #pragma once
@@ -68,14 +65,14 @@ public:
   std::set<double> relevant_regions(double left, double right);
 
   //manupulation, may invoke optimizer
-  bool auto_fit(double regionID, boost::atomic<bool>& interruptor);
-  bool add_peak(double left, double right, boost::atomic<bool>& interruptor);
-  bool adj_LB(double regionID, double left, double right, boost::atomic<bool>& interruptor);
-  bool adj_RB(double regionID, double left, double right, boost::atomic<bool>& interruptor);
-  bool merge_regions(double left, double right, boost::atomic<bool>& interruptor);
-  bool refit_region(double regionID, boost::atomic<bool>& interruptor);
+  bool auto_fit(double regionID, OptimizerPtr optimizer, boost::atomic<bool>& interruptor);
+  bool add_peak(double left, double right, OptimizerPtr optimizer, boost::atomic<bool>& interruptor);
+  bool adj_LB(double regionID, double left, double right, OptimizerPtr optimizer, boost::atomic<bool>& interruptor);
+  bool adj_RB(double regionID, double left, double right, OptimizerPtr optimizer, boost::atomic<bool>& interruptor);
+  bool merge_regions(double left, double right, OptimizerPtr optimizer, boost::atomic<bool>& interruptor);
+  bool refit_region(double regionID, OptimizerPtr optimizer, boost::atomic<bool>& interruptor);
   bool override_ROI_settings(double regionID, const FitSettings &fs, boost::atomic<bool>& interruptor);
-  bool remove_peaks(std::set<double> peakIDs, boost::atomic<bool>& interruptor);
+  bool remove_peaks(std::set<double> peakIDs, OptimizerPtr optimizer, boost::atomic<bool>& interruptor);
   //manipulation, no optimizer
   bool adjust_sum4(double &peakID, double left, double right);
   bool replace_hypermet(double &peakID, Hypermet hyp);

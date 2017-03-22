@@ -127,7 +127,8 @@ private:
               fitter_opt_;
 
   Qpx::Peak peak_ref_;
-  Polynomial response_function_;
+
+  std::shared_ptr<Polynomial> response_function_;
 
   std::vector<DataPoint> experiment_;
 

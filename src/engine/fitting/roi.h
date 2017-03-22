@@ -26,6 +26,7 @@
 #include "polynomial.h"
 #include "finder.h"
 #include <boost/atomic.hpp>
+#include "optimizer.h"
 
 #include "xmlable.h"
 
@@ -102,12 +103,15 @@ struct ROI {
   bool override_energy(double peakID, double energy);
 
   //manupulation, may invoke optimizer
-  bool auto_fit(boost::atomic<bool>& interruptor);
-  bool refit(boost::atomic<bool>& interruptor);
-  bool adjust_LB(const Finder &parentfinder, double left, double right, boost::atomic<bool>& interruptor);
-  bool adjust_RB(const Finder &parentfinder, double left, double right, boost::atomic<bool>& interruptor);
-  bool add_peak(const Finder &parentfinder, double left, double right, boost::atomic<bool>& interruptor);
-  bool remove_peaks(const std::set<double> &pks, boost::atomic<bool>& interruptor);
+  bool auto_fit(OptimizerPtr optimizer, boost::atomic<bool>& interruptor);
+  bool refit(OptimizerPtr optimizer, boost::atomic<bool>& interruptor);
+  bool adjust_LB(const Finder &parentfinder, double left, double right,
+                 OptimizerPtr optimizer, boost::atomic<bool>& interruptor);
+  bool adjust_RB(const Finder &parentfinder, double left, double right,
+                 OptimizerPtr optimizer, boost::atomic<bool>& interruptor);
+  bool add_peak(const Finder &parentfinder, double left, double right,
+                OptimizerPtr optimizer, boost::atomic<bool>& interruptor);
+  bool remove_peaks(const std::set<double> &pks, OptimizerPtr optimizer, boost::atomic<bool>& interruptor);
   bool override_settings(const FitSettings &fs, boost::atomic<bool>& interruptor);
 
 
@@ -151,11 +155,12 @@ private:
   void cull_peaks();
   bool remove_peak(double bin);
 
-  bool add_from_resid(boost::atomic<bool>& interruptor, int32_t centroid_hint = -1);
-  bool rebuild(boost::atomic<bool>& interruptor);
-  bool rebuild_as_hypermet(boost::atomic<bool>& interruptor);
-  bool rebuild_as_gaussian(boost::atomic<bool>& interruptor);
-  void iterative_fit(boost::atomic<bool>& interruptor);
+  bool add_from_resid(OptimizerPtr optimizer, boost::atomic<bool>& interruptor,
+                      int32_t centroid_hint = -1);
+  bool rebuild(OptimizerPtr optimizer, boost::atomic<bool>& interruptor);
+  bool rebuild_as_hypermet(OptimizerPtr optimizer, boost::atomic<bool>& interruptor);
+  bool rebuild_as_gaussian(OptimizerPtr optimizer, boost::atomic<bool>& interruptor);
+  void iterative_fit(OptimizerPtr optimizer, boost::atomic<bool>& interruptor);
 
   void render();
   void save_current_fit(std::string description);

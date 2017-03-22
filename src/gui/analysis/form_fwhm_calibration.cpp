@@ -27,7 +27,7 @@
 #include "qt_util.h"
 #include "sqrt_poly.h"
 
-#include "optimizer.h"
+#include "optimizer_ROOT.h"
 
 FormFwhmCalibration::FormFwhmCalibration(XMLableDB<Qpx::Detector>& dets,
                                          Qpx::Fitter& fit, QWidget *parent)
@@ -359,7 +359,8 @@ void FormFwhmCalibration::fit_calibration()
   for (int i=0; i <= ui->spinTerms->value(); ++i)
     p->add_coeff(i, 0, 50, 0);
 
-  Qpx::Optimizer::fit(*p, xx, yy, xx_sigma, yy_sigma);
+  auto optimizer = std::make_shared<Qpx::OptimizerROOT>();
+  optimizer->fit(p, xx, yy, xx_sigma, yy_sigma);
 
   if (p->coeff_count())
   {

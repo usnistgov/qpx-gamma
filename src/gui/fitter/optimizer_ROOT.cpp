@@ -15,18 +15,111 @@
  * Author(s):
  *      Martin Shetty (NIST)
  *
- * Description:
- *      Optimizer
- *
  ******************************************************************************/
 
-#include "optimizer.h"
+#include "optimizer_ROOT.h"
 #include "TH1.h"
-
+#include "custom_logger.h"
 
 namespace Qpx {
 
-std::string Optimizer::def(uint16_t num, const FitParam& param)
+std::string OptimizerROOT::def_of(CoefFunction* t)
+{
+  if (t->type() == "Polynomial")
+    return def_Polynomial(*t);
+  else if (t->type() == "PolyLog")
+    return def_PolyLog(*t);
+  else if (t->type() == "LogInverse")
+    return def_LogInverse(*t);
+  else if (t->type() == "SqrtPoly")
+    return def_SqrtPoly(*t);
+  else if (t->type() == "Effit")
+    return def_Effit(*t);
+  return "";
+}
+
+void OptimizerROOT::fit(std::shared_ptr<CoefFunction> func,
+                        const std::vector<double> &x,
+                        const std::vector<double> &y,
+                        const std::vector<double> &x_sigma,
+                        const std::vector<double> &y_sigma)
+{
+  if (!func || (x.size() != y.size()))
+    return;
+
+  TGraphErrors* g1;
+  if ((x.size() == x_sigma.size()) && (x_sigma.size() == y_sigma.size()))
+    g1 = new TGraphErrors(y.size(),
+                          x.data(), y.data(),
+                          x_sigma.data(), y_sigma.data());
+  else
+    g1 = new TGraphErrors(y.size(),
+                          x.data(), y.data(),
+                          nullptr, nullptr);
+
+  std::string def = def_of(func.get());
+
+  DBG << "Def = " << def;
+
+  TF1* f1 = new TF1("f1", def.c_str());
+  set_params(*func, f1, 0);
+
+  g1->Fit("f1", "QEMN");
+
+  get_params(*func, f1, 0);
+  func->set_chi2(f1->GetChisquare());
+
+  f1->Delete();
+  g1->Delete();
+}
+
+std::string OptimizerROOT::def_Polynomial(const CoefFunction& p)
+{
+  std::string xc = "x";
+  if (p.xoffset().value().finite() && p.xoffset().value().value())
+    xc = "(x-" + std::to_string(p.xoffset().value().value()) + ")";
+
+  return define_chain(p, xc);
+}
+
+std::string OptimizerROOT::def_PolyLog(const CoefFunction& p)
+{
+  std::string xc = "TMath::Log(x)";
+  if (p.xoffset().value().finite() && p.xoffset().value().value())
+    xc = "TMath::Log(x-" + std::to_string(p.xoffset().value().value()) + ")";
+
+  return "TMath::Exp(" + define_chain(p, xc) + ")";
+}
+
+std::string OptimizerROOT::def_SqrtPoly(const CoefFunction& p)
+{
+  std::string xc = "x";
+  if (p.xoffset().value().finite() && p.xoffset().value().value())
+    xc = "(x-" + std::to_string(p.xoffset().value().value()) + ")";
+
+  return "TMath::Sqrt(" + define_chain(p, xc) + ")";
+}
+
+std::string OptimizerROOT::def_LogInverse(const CoefFunction& p)
+{
+  std::string xc = "(1.0/x)";
+  if (p.xoffset().value().finite() && p.xoffset().value().value())
+    xc = "1.0/(x-" + std::to_string(p.xoffset().value().value()) + ")";
+
+  return "TMath::Exp(" + define_chain(p, xc) + ")";
+}
+
+std::string OptimizerROOT::def_Effit(const CoefFunction& p)
+{
+  std::string definition = "((d + e*xb + f*(xb^2))^(-20))^(-0.05) where xb=ln(x/1000)";
+  //   x= ((A + B*ln(x/100.0) + C*(ln(x/100.0)^2))^(-G) + (D + E*ln(x/1000.0) + F*(ln(x/1000.0)^2))^(1-G))^(1-(1/G))
+  //pow(pow(A + B*xa + C*xa*xa,-G) + pow(D + E*xb + F*xb*xb,-G), -1.0/G);
+//  if (G==0)
+//      G = 20;
+  return definition;
+}
+
+std::string OptimizerROOT::def(uint16_t num, const FitParam& param)
 {
   if (!param.fixed())
     return "[" + std::to_string(num) + "]";
@@ -36,18 +129,18 @@ std::string Optimizer::def(uint16_t num, const FitParam& param)
     return "0";
 }
 
-void Optimizer::set(TF1* f, uint16_t num, const FitParam& param)
+void OptimizerROOT::set(TF1* f, uint16_t num, const FitParam& param)
 {
   f->SetParameter(num, param.value().value());
   f->SetParLimits(num, param.lower(), param.upper());
 }
 
-UncertainDouble Optimizer::get(TF1* f, uint16_t num)
+UncertainDouble OptimizerROOT::get(TF1* f, uint16_t num)
 {
   return UncertainDouble::from_double(f->GetParameter(num), f->GetParError(num));
 }
 
-uint16_t Optimizer::set_params(const CoefFunction &func, TF1* f, uint16_t start)
+uint16_t OptimizerROOT::set_params(const CoefFunction &func, TF1* f, uint16_t start)
 {
   for (const auto &p : func.get_coeffs())
     if (!p.second.fixed())
@@ -58,7 +151,7 @@ uint16_t Optimizer::set_params(const CoefFunction &func, TF1* f, uint16_t start)
   return start;
 }
 
-uint16_t Optimizer::get_params(CoefFunction &func, TF1* f, uint16_t start)
+uint16_t OptimizerROOT::get_params(CoefFunction &func, TF1* f, uint16_t start)
 {
   for (auto p : func.get_coeffs())
     if (!p.second.fixed())
@@ -69,8 +162,8 @@ uint16_t Optimizer::get_params(CoefFunction &func, TF1* f, uint16_t start)
   return start;
 }
 
-std::string Optimizer::CoefFunctionVisitor::define_chain(const CoefFunction& func,
-                                                         const std::string &element) const
+std::string OptimizerROOT::define_chain(const CoefFunction& func,
+                                        const std::string &element)
 {
   std::string definition;
   int i = 0;
@@ -93,42 +186,42 @@ std::string Optimizer::CoefFunctionVisitor::define_chain(const CoefFunction& fun
   return definition;
 }
 
-std::string Optimizer::def(const Gaussian& gaussian, uint16_t start)
+std::string OptimizerROOT::def(const Gaussian& gaussian, uint16_t start)
 {
   return def(gaussian, start, start+1, start+2);
 }
 
-std::string Optimizer::def(const Gaussian& gaussian, uint16_t a, uint16_t c, uint16_t w)
+std::string OptimizerROOT::def(const Gaussian& gaussian, uint16_t a, uint16_t c, uint16_t w)
 {
   return def(a, gaussian.height()) +
       "*TMath::Exp(-((x-" + def(c, gaussian.center()) + ")/" + def(w, gaussian.hwhm()) + ")^2)";
 }
 
-void Optimizer::set_params(const Gaussian& gaussian, TF1* f, uint16_t start)
+void OptimizerROOT::set_params(const Gaussian& gaussian, TF1* f, uint16_t start)
 {
   set_params(gaussian, f, start, start+1, start+2);
 }
 
-void Optimizer::set_params(const Gaussian& gaussian, TF1* f, uint16_t a, uint16_t c, uint16_t w)
+void OptimizerROOT::set_params(const Gaussian& gaussian, TF1* f, uint16_t a, uint16_t c, uint16_t w)
 {
   set(f, a, gaussian.height());
   set(f, c, gaussian.center());
   set(f, w, gaussian.hwhm());
 }
 
-void Optimizer::get_params(Gaussian& gaussian, TF1* f, uint16_t start)
+void OptimizerROOT::get_params(Gaussian& gaussian, TF1* f, uint16_t start)
 {
   get_params(gaussian, f, start, start+1, start+2);
 }
 
-void Optimizer::get_params(Gaussian& gaussian, TF1* f, uint16_t a, uint16_t c, uint16_t w)
+void OptimizerROOT::get_params(Gaussian& gaussian, TF1* f, uint16_t a, uint16_t c, uint16_t w)
 {
   gaussian.set_height(get(f, a));
   gaussian.set_center(get(f, c));
   gaussian.set_hwhm(get(f, w));
 }
 
-void Optimizer::initial_sanity(Gaussian& gaussian,
+void OptimizerROOT::initial_sanity(Gaussian& gaussian,
                                double xmin, double xmax,
                                double ymin, double ymax)
 {
@@ -137,7 +230,7 @@ void Optimizer::initial_sanity(Gaussian& gaussian,
   gaussian.bound_hwhm(0, xmax-xmin);
 }
 
-void Optimizer::sanity_check(Gaussian& gaussian,
+void OptimizerROOT::sanity_check(Gaussian& gaussian,
                              double xmin, double xmax,
                              double ymin, double ymax)
 {
@@ -146,7 +239,7 @@ void Optimizer::sanity_check(Gaussian& gaussian,
   gaussian.constrain_hwhm(0, xmax-xmin);
 }
 
-TH1D* Optimizer::fill_hist(const std::vector<double> &x,
+TH1D* OptimizerROOT::fill_hist(const std::vector<double> &x,
                            const std::vector<double> &y)
 {
   if ((x.size() < 1) || (x.size() != y.size()))
@@ -164,7 +257,7 @@ TH1D* Optimizer::fill_hist(const std::vector<double> &x,
 }
 
 
-void Optimizer::fit(Gaussian& gaussian,
+void OptimizerROOT::fit(Gaussian& gaussian,
                     const std::vector<double> &x,
                     const std::vector<double> &y)
 {
@@ -188,7 +281,7 @@ void Optimizer::fit(Gaussian& gaussian,
   h1->Delete();
 }
 
-std::vector<Gaussian> Optimizer::fit_multiplet(const std::vector<double> &x,
+std::vector<Gaussian> OptimizerROOT::fit_multiplet(const std::vector<double> &x,
                                                const std::vector<double> &y,
                                                std::vector<Gaussian> old,
                                                Polynomial &background,
@@ -204,7 +297,7 @@ std::vector<Gaussian> Optimizer::fit_multiplet(const std::vector<double> &x,
     return fit_multi_variw(x,y, old, background, settings);
 }
 
-std::vector<Hypermet> Optimizer::fit_multiplet(const std::vector<double> &x,
+std::vector<Hypermet> OptimizerROOT::fit_multiplet(const std::vector<double> &x,
                                                const std::vector<double> &y,
                                                std::vector<Hypermet> old,
                                                Polynomial &background,
@@ -221,14 +314,14 @@ std::vector<Hypermet> Optimizer::fit_multiplet(const std::vector<double> &x,
 }
 
 
-void Optimizer::constrain_center(Gaussian &gaussian, double slack)
+void OptimizerROOT::constrain_center(Gaussian &gaussian, double slack)
 {
   double lateral_slack = slack * gaussian.hwhm().value().value() * 2 * sqrt(log(2));
   gaussian.constrain_center(gaussian.center().value().value() - lateral_slack,
                             gaussian.center().value().value() + lateral_slack);
 }
 
-std::vector<Gaussian> Optimizer::fit_multi_variw(const std::vector<double> &x,
+std::vector<Gaussian> OptimizerROOT::fit_multi_variw(const std::vector<double> &x,
                                                  const std::vector<double> &y,
                                                  std::vector<Gaussian> old,
                                                  Polynomial &background,
@@ -254,7 +347,7 @@ std::vector<Gaussian> Optimizer::fit_multi_variw(const std::vector<double> &x,
                             width_expected * settings.width_common_bounds.upper());
   }
 
-  std::string definition = def_of(background);
+  std::string definition = def_of(&background);
   uint16_t backgroundparams = background.coeff_count(); //valid coef count?
   for (size_t i=0; i < old.size(); ++i)
   {
@@ -288,7 +381,7 @@ std::vector<Gaussian> Optimizer::fit_multi_variw(const std::vector<double> &x,
   return old;
 }
 
-std::vector<Gaussian> Optimizer::fit_multi_commonw(const std::vector<double> &x,
+std::vector<Gaussian> OptimizerROOT::fit_multi_commonw(const std::vector<double> &x,
                                                    const std::vector<double> &y,
                                                    std::vector<Gaussian> old,
                                                    Polynomial &background,
@@ -313,7 +406,7 @@ std::vector<Gaussian> Optimizer::fit_multi_commonw(const std::vector<double> &x,
     constrain_center(gaussian, settings.lateral_slack);
   }
 
-  std::string definition = def_of(background);
+  std::string definition = def_of(&background);
   uint16_t w_index = background.coeff_count(); //valid coef count?
   for (size_t i=0; i < old.size(); ++i)
   {
@@ -348,12 +441,12 @@ std::vector<Gaussian> Optimizer::fit_multi_commonw(const std::vector<double> &x,
   return old;
 }
 
-std::string Optimizer::def(const Hypermet& h, uint16_t start)
+std::string OptimizerROOT::def(const Hypermet& h, uint16_t start)
 {
   return def(h, start, start+1);
 }
 
-std::string Optimizer::def_skew(const FitParam& ampl, const FitParam& slope,
+std::string OptimizerROOT::def_skew(const FitParam& ampl, const FitParam& slope,
                                 const std::string &w, const std::string &xc,
                                 const std::string &xcw, uint16_t idx)
 {
@@ -365,7 +458,7 @@ std::string Optimizer::def_skew(const FitParam& ampl, const FitParam& slope,
 }
 
 
-std::string Optimizer::def(const Hypermet& hyp, uint16_t width, uint16_t i)
+std::string OptimizerROOT::def(const Hypermet& hyp, uint16_t width, uint16_t i)
 {
   std::string h = def(i, hyp.height());
   std::string w = def(width, hyp.width());
@@ -394,12 +487,12 @@ std::string Optimizer::def(const Hypermet& hyp, uint16_t width, uint16_t i)
   return h + "*( TMath::Exp(-(" + xcw + ")^2) + 0.5 * (" + lskew +  " + " + rskew + " + " + tail  + " + " + step  + " ) )";
 }
 
-void Optimizer::set_params(const Hypermet& hyp, TF1* f, uint16_t start)
+void OptimizerROOT::set_params(const Hypermet& hyp, TF1* f, uint16_t start)
 {
   set_params(hyp, f, start, start+1);
 }
 
-void Optimizer::set_params(const Hypermet& hyp, TF1* f, uint16_t width, uint16_t others_start)
+void OptimizerROOT::set_params(const Hypermet& hyp, TF1* f, uint16_t width, uint16_t others_start)
 {
   set(f, width, hyp.width());
   set(f, others_start, hyp.height());
@@ -413,12 +506,12 @@ void Optimizer::set_params(const Hypermet& hyp, TF1* f, uint16_t width, uint16_t
   set(f, others_start+8, hyp.step_amplitude());
 }
 
-void Optimizer::get_params(Hypermet& hyp, TF1* f, uint16_t start)
+void OptimizerROOT::get_params(Hypermet& hyp, TF1* f, uint16_t start)
 {
   get_params(hyp, f, start, start+1);
 }
 
-void Optimizer::get_params(Hypermet& hyp, TF1* f, uint16_t w, uint16_t others_start)
+void OptimizerROOT::get_params(Hypermet& hyp, TF1* f, uint16_t w, uint16_t others_start)
 {
   hyp.set_width(get(f, w));
   hyp.set_height(get(f, others_start));
@@ -432,7 +525,7 @@ void Optimizer::get_params(Hypermet& hyp, TF1* f, uint16_t w, uint16_t others_st
   hyp.set_step_amplitude(get(f, others_start+8));
 }
 
-void Optimizer::sanity_check(Hypermet& hyp,
+void OptimizerROOT::sanity_check(Hypermet& hyp,
                              double xmin, double xmax,
                              double ymin, double ymax)
 {
@@ -441,14 +534,14 @@ void Optimizer::sanity_check(Hypermet& hyp,
   hyp.constrain_width(0, xmax-xmin);
 }
 
-void Optimizer::constrain_center(Hypermet &hyp, double slack)
+void OptimizerROOT::constrain_center(Hypermet &hyp, double slack)
 {
   double lateral_slack = slack * hyp.width().value().value() * 2 * sqrt(log(2));
   hyp.constrain_center(hyp.center().value().value() - lateral_slack,
                        hyp.center().value().value() + lateral_slack);
 }
 
-std::vector<Hypermet> Optimizer::fit_multi_variw(const std::vector<double> &x,
+std::vector<Hypermet> OptimizerROOT::fit_multi_variw(const std::vector<double> &x,
                                                  const std::vector<double> &y,
                                                  std::vector<Hypermet> old,
                                                  Polynomial &background,
@@ -474,7 +567,7 @@ std::vector<Hypermet> Optimizer::fit_multi_variw(const std::vector<double> &x,
                         width_expected * settings.width_common_bounds.upper());
   }
 
-  std::string definition = def_of(background);
+  std::string definition = def_of(&background);
   uint16_t backgroundparams = background.coeff_count(); //valid coef count?
   for (size_t i=0; i < old.size(); ++i)
   {
@@ -508,7 +601,7 @@ std::vector<Hypermet> Optimizer::fit_multi_variw(const std::vector<double> &x,
   return old;
 }
 
-std::vector<Hypermet> Optimizer::fit_multi_commonw(const std::vector<double> &x,
+std::vector<Hypermet> OptimizerROOT::fit_multi_commonw(const std::vector<double> &x,
                                                    const std::vector<double> &y,
                                                    std::vector<Hypermet> old,
                                                    Polynomial &background,
@@ -533,7 +626,7 @@ std::vector<Hypermet> Optimizer::fit_multi_commonw(const std::vector<double> &x,
     constrain_center(hyp, settings.lateral_slack);
   }
 
-  std::string definition = def_of(background);
+  std::string definition = def_of(&background);
   uint16_t w_index = background.coeff_count(); //valid coef count?
   for (size_t i=0; i < old.size(); ++i)
   {

@@ -15,9 +15,6 @@
  * Author(s):
  *      Martin Shetty (NIST)
  *
- * Description:
- *      Fitter
- *
  ******************************************************************************/
 
 #include "fitter.h"
@@ -281,32 +278,35 @@ void Fitter::render_all()
                    r.second.finder().y_background_);
 }
 
-bool Fitter::auto_fit(double regionID,  boost::atomic<bool>& interruptor) {
+bool Fitter::auto_fit(double regionID, OptimizerPtr optimizer, boost::atomic<bool>& interruptor)
+{
   if (!regions_.count(regionID))
     return false;
 
-  regions_[regionID].auto_fit(interruptor);
+  regions_[regionID].auto_fit(optimizer, interruptor);
   render_all();
   return true;
 }
 
-bool Fitter::refit_region(double regionID, boost::atomic<bool>& interruptor)
+bool Fitter::refit_region(double regionID, OptimizerPtr optimizer, boost::atomic<bool>& interruptor)
 {
   if (!contains_region(regionID))
     return false;
 
-  regions_[regionID].refit(interruptor);
+  regions_[regionID].refit(optimizer, interruptor);
   render_all();
   return true;
 }
 
 
-bool Fitter::adj_LB(double regionID, double left, double right, boost::atomic<bool>& interruptor) {
+bool Fitter::adj_LB(double regionID, double left, double right,
+                    OptimizerPtr optimizer, boost::atomic<bool>& interruptor)
+{
   if (!contains_region(regionID))
     return false;
 
   ROI newROI = regions_[regionID];
-  if (!newROI.adjust_LB(finder_, left, right, interruptor))
+  if (!newROI.adjust_LB(finder_, left, right, optimizer, interruptor))
     return false;
   regions_.erase(regionID);
   regions_[newROI.ID()] = newROI;
@@ -314,12 +314,14 @@ bool Fitter::adj_LB(double regionID, double left, double right, boost::atomic<bo
   return true;
 }
 
-bool Fitter::adj_RB(double regionID, double left, double right, boost::atomic<bool>& interruptor) {
+bool Fitter::adj_RB(double regionID, double left, double right,
+                    OptimizerPtr optimizer, boost::atomic<bool>& interruptor)
+{
   if (!contains_region(regionID))
     return false;
 
   ROI newROI = regions_[regionID];
-  if (!newROI.adjust_RB(finder_, left, right, interruptor))
+  if (!newROI.adjust_RB(finder_, left, right, optimizer, interruptor))
     return false;
   regions_.erase(regionID);
   regions_[newROI.ID()] = newROI;
@@ -341,7 +343,9 @@ bool Fitter::override_ROI_settings(double regionID, const FitSettings &fs, boost
 
 }
 
-bool Fitter::merge_regions(double left, double right, boost::atomic<bool>& interruptor) {
+bool Fitter::merge_regions(double left, double right,
+                           OptimizerPtr optimizer, boost::atomic<bool>& interruptor)
+{
   std::set<double> rois = relevant_regions(left, right);
   double min = std::min(left, right);
   double max = std::max(left, right);
@@ -358,7 +362,7 @@ bool Fitter::merge_regions(double left, double right, boost::atomic<bool>& inter
   ROI newROI(finder_, min, max);
 
   //add old peaks?
-  newROI.auto_fit(interruptor);
+  newROI.auto_fit(optimizer, interruptor);
   if (!newROI.width())
     return false;
 
@@ -401,13 +405,15 @@ bool Fitter::rollback_ROI(double regionID, size_t point)
   return true;
 }
 
-bool Fitter::add_peak(double left, double right, boost::atomic<bool>& interruptor) {
+bool Fitter::add_peak(double left, double right,
+                      OptimizerPtr optimizer, boost::atomic<bool>& interruptor)
+{
   if (finder_.x_.empty())
     return false;
 
   for (auto &q : regions_) {
     if (q.second.overlaps(left, right)) {
-      q.second.add_peak(finder_, left, right, interruptor);
+      q.second.add_peak(finder_, left, right, optimizer, interruptor);
       render_all();
       return true;
     }
@@ -416,7 +422,7 @@ bool Fitter::add_peak(double left, double right, boost::atomic<bool>& interrupto
 //  DBG << "<Fitter> making new ROI to add peak manually " << left << " " << right;
   ROI newROI(finder_, left, right);
 //  newROI.add_peak(finder_.x_, finder_.y_, left, right, interruptor);
-  newROI.auto_fit(interruptor);
+  newROI.auto_fit(optimizer, interruptor);
   if (!newROI.width())
     return false;
 
@@ -425,10 +431,12 @@ bool Fitter::add_peak(double left, double right, boost::atomic<bool>& interrupto
   return true;
 }
 
-bool Fitter::remove_peaks(std::set<double> bins, boost::atomic<bool>& interruptor) {
+bool Fitter::remove_peaks(std::set<double> bins,
+                          OptimizerPtr optimizer, boost::atomic<bool>& interruptor)
+{
   bool changed = false;
   for (auto &m : regions_)
-    if (m.second.remove_peaks(bins, interruptor))
+    if (m.second.remove_peaks(bins, optimizer, interruptor))
       changed = true;
   if (changed)
     render_all();
