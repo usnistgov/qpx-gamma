@@ -2,6 +2,23 @@
 
 minimum_qt_version=$1
 
+qtversion="5.$1"
+
+if [ `getconf LONG_BIT` = "64" ]
+then
+  dest_dir="~/Qt/${qtversion}/gcc_64"
+  download_file="qt-unified-linux-x64-online.run"
+else
+  dest_dir="~/Qt/${qtversion}/gcc"
+  download_file="qt-unified-linux-x86-online.run"
+fi
+
+echo $qtversion
+echo $dest_dir
+echo $download_file
+
+exit
+
 if [ -z "$minimum_qt_version" ]; then
   exit
 fi
@@ -19,24 +36,17 @@ if [ "$default_qt_version" -ge "$minimum_qt_version" ]; then
   exit
 fi;
 
-if [ `getconf LONG_BIT` = "64" ]
-then
-  wget http://download.qt.io/official_releases/online_installers/qt-unified-linux-x64-online.run
-  chmod +x qt-unified-linux-x64-online.run
-  echo Will now install Qt using the online installer. Make sure to chose Qt5.5.
-  read -n1 -rsp $'Press any key to continue or Ctrl+C to exit...\n'
-  ./qt-unified-linux-x64-online.run
-  rm qt-unified-linux-x64-online.run
-  LINE="export CMAKE_PREFIX_PATH=$HOME/Qt/5.5/gcc_64"
-else
-  wget http://download.qt.io/official_releases/online_installers/qt-unified-linux-x86-online.run
-  chmod +x qt-unified-linux-x86-online.run
-  echo Will now install Qt using the online installer. Make sure to chose Qt5.5.
-  read -n1 -rsp $'Press any key to continue or Ctrl+C to exit...\n'
-  ./qt-unified-linux-x86-online.run
-  rm qt-unified-linux-x86-online.run    
-  LINE="export CMAKE_PREFIX_PATH=$HOME/Qt/5.5/gcc"
-fi
+wget http://download.qt.io/official_releases/online_installers/$download_file
+chmod +x $download_file
+echo Will now install Qt using the online installer. Make sure to chose $qtversion.
+read -n1 -rsp $'Press any key to continue or Ctrl+C to exit...\n'
+./$download_file
+rm $download_file
 
+text="${dest_dir}/bin"$'\n'"${dest_dir}/lib"
+mkdir ~/.config/qtchooser
+echo "$text" > ~/.config/qtchooser/default.conf
+
+LINE="export CMAKE_PREFIX_PATH=$dest_dir"
 eval $LINE
 printf '%s\n' "$LINE" >> ~/.profile

@@ -17,7 +17,7 @@ find_package(ROOT REQUIRED COMPONENTS Hist)
 include(${ROOT_USE_FILE})
 
 
-#add_definitions(-DQCUSTOMPLOT_USE_OPENGL)
+add_definitions(-DQCUSTOMPLOT_USE_OPENGL)
 
 file(GLOB_RECURSE gui_SOURCES *.cpp *.h *.ui)
 file(GLOB_RECURSE gui_HEADERS *.h *.hpp ${PROJECT_BINARY_DIR}/*.h)
