@@ -1,7 +1,11 @@
 #!/bin/bash
 
-minimum_qt_version=$1
+if [ -z "$1" ]; then
+  exit
+fi
 
+
+minimum_qt_version=$1
 qtversion="5.$1"
 
 if [ `getconf LONG_BIT` = "64" ]
@@ -12,17 +16,6 @@ else
   dest_dir="~/Qt/${qtversion}/gcc"
   download_file="qt-unified-linux-x86-online.run"
 fi
-
-echo $qtversion
-echo $dest_dir
-echo $download_file
-
-exit
-
-if [ -z "$minimum_qt_version" ]; then
-  exit
-fi
-
 
 sudo apt-get -y install libgl1-mesa-dev
 
