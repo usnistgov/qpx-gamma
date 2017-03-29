@@ -55,4 +55,37 @@ public:
 
 using OptimizerPtr = std::shared_ptr<Optimizer>;
 
+
+class OptimizerFactory {
+public:
+  static OptimizerFactory& getInstance()
+  {
+    static OptimizerFactory singleton_instance;
+    return singleton_instance;
+  }
+
+  OptimizerPtr create_any() const;
+  OptimizerPtr create_type(std::string type) const;
+  void register_type(std::string name, std::function<Optimizer*(void)> typeConstructor);
+  std::vector<std::string> types() const;
+
+private:
+  std::map<std::string, std::function<Optimizer*(void)>> constructors;
+
+  //singleton assurance
+  OptimizerFactory() {}
+  OptimizerFactory(OptimizerFactory const&);
+  void operator=(OptimizerFactory const&);
+};
+
+template<class T>
+class OptimizerRegistrar {
+public:
+  OptimizerRegistrar(std::string name)
+  {
+    OptimizerFactory::getInstance().register_type(name,
+                                               [](void) -> Optimizer * { return new T();});
+  }
+};
+
 }

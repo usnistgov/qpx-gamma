@@ -35,7 +35,7 @@ public:
     return singleton_instance;
   }
 
-  SourcePtr create_type(std::string type, std::string file);
+  ProducerPtr create_type(std::string type, std::string file);
   void register_type(std::string name, std::function<Producer*(void)> typeConstructor);
   const std::vector<std::string> types();
 

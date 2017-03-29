@@ -17,28 +17,37 @@
  *
  ******************************************************************************/
 
-#include "producer_factory.h"
+#include "optimizer.h"
+#include "custom_logger.h"
 
 namespace Qpx {
 
-ProducerPtr ProducerFactory::create_type(std::string type, std::string file)
+OptimizerPtr OptimizerFactory::create_any() const
 {
-  ProducerPtr instance;
-  auto it = constructors.find(type);
-  if (it != constructors.end())
-    instance = ProducerPtr(it->second());
-  if (instance.operator bool() && instance->load_setting_definitions(file))
-    return instance;
-  return ProducerPtr();
+  if (!constructors.empty())
+    return create_type(constructors.begin()->first);
+  return OptimizerPtr();
 }
 
-void ProducerFactory::register_type(std::string name, std::function<Producer*(void)> typeConstructor)
+
+OptimizerPtr OptimizerFactory::create_type(std::string type) const
 {
-  LINFO << "<ProducerFactory> registering source '" << name << "'";
+  OptimizerPtr instance;
+  auto it = constructors.find(type);
+  if (it != constructors.end())
+    instance = OptimizerPtr(it->second());
+  if (instance.operator bool())
+    return instance;
+  return OptimizerPtr();
+}
+
+void OptimizerFactory::register_type(std::string name, std::function<Optimizer*(void)> typeConstructor)
+{
+  LINFO << "<OptimizerFactory> registering Optimizer '" << name << "'";
   constructors[name] = typeConstructor;
 }
 
-const std::vector<std::string> ProducerFactory::types() {
+std::vector<std::__cxx11::string> OptimizerFactory::types() const {
   std::vector<std::string> all_types;
   for (auto &q : constructors)
     all_types.push_back(q.first);
@@ -46,4 +55,3 @@ const std::vector<std::string> ProducerFactory::types() {
 }
 
 }
-

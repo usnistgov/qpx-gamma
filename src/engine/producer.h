@@ -86,6 +86,6 @@ protected:
 
 };
 
-typedef std::shared_ptr<Producer> SourcePtr;
+typedef std::shared_ptr<Producer> ProducerPtr;
 
 }

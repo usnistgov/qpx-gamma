@@ -105,6 +105,7 @@ private:
   Qpx::Project          *spectra_;
   int64_t     current_spectrum_;
   std::string current_detector_;
+  Qpx::OptimizerPtr optimizer_;
 
   XMLableDB<Qpx::Detector> &detectors_;
 

@@ -79,7 +79,7 @@ protected:
   ProducerStatus aggregate_status_, intrinsic_status_;
   mutable boost::mutex mutex_;
 
-  std::map<std::string, SourcePtr> devices_;
+  std::map<std::string, ProducerPtr> devices_;
 
   Qpx::Setting settings_tree_;
   Qpx::SettingMeta total_det_num_, single_det_;

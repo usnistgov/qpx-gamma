@@ -27,7 +27,7 @@
 #include "qt_util.h"
 #include <QSettings>
 
-#include "optimizer_ROOT.h"
+
 
 FormGainCalibration::FormGainCalibration(XMLableDB<Qpx::Detector>& dets, Qpx::Fitter& fit1, Qpx::Fitter& fit2, QWidget *parent) :
   QWidget(parent),
@@ -195,6 +195,10 @@ void FormGainCalibration::on_pushSaveCalib_clicked()
 
 void FormGainCalibration::on_pushCalibGain_clicked()
 {
+  auto optimizer = Qpx::OptimizerFactory::getInstance().create_any();
+  if (!optimizer)
+    return;
+
   std::vector<double> xx, yy;
   std::vector<double> xx_sigma, yy_sigma;
   for (auto &q: fit_data1_.peaks())
@@ -233,7 +237,6 @@ void FormGainCalibration::on_pushCalibGain_clicked()
 //  yy_sigma.resize(yy.size(), 1);
 //  p.fit(xx, yy, xx_sigma, yy_sigma);
 
-  auto optimizer = std::make_shared<Qpx::OptimizerROOT>();
   optimizer->fit(p, xx, yy, xx_sigma, yy_sigma);
 
   if (p->coeff_count())

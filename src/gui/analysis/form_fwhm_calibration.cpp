@@ -27,7 +27,7 @@
 #include "qt_util.h"
 #include "sqrt_poly.h"
 
-#include "optimizer_ROOT.h"
+
 
 FormFwhmCalibration::FormFwhmCalibration(XMLableDB<Qpx::Detector>& dets,
                                          Qpx::Fitter& fit, QWidget *parent)
@@ -333,6 +333,10 @@ void FormFwhmCalibration::on_pushFit_clicked()
 
 void FormFwhmCalibration::fit_calibration()
 {
+  auto optimizer = Qpx::OptimizerFactory::getInstance().create_any();
+  if (!optimizer)
+    return;
+
   std::vector<double> xx, yy, xx_sigma, yy_sigma;
   for (auto &q : fit_data_.peaks())
   {
@@ -359,7 +363,6 @@ void FormFwhmCalibration::fit_calibration()
   for (int i=0; i <= ui->spinTerms->value(); ++i)
     p->add_coeff(i, 0, 50, 0);
 
-  auto optimizer = std::make_shared<Qpx::OptimizerROOT>();
   optimizer->fit(p, xx, yy, xx_sigma, yy_sigma);
 
   if (p->coeff_count())

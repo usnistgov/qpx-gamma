@@ -22,6 +22,8 @@
 
 namespace Qpx {
 
+static OptimizerRegistrar<OptimizerROOT> registrar(std::string("ROOT"));
+
 std::string OptimizerROOT::def_of(CoefFunction* t)
 {
   if (t->type() == "Polynomial")

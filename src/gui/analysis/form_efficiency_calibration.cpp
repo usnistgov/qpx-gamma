@@ -35,7 +35,7 @@
 #include "log_inverse.h"
 #include "effit.h"
 
-#include "optimizer_ROOT.h"
+
 
 using namespace Qpx;
 
@@ -45,6 +45,8 @@ FormEfficiencyCalibration::FormEfficiencyCalibration(XMLableDB<Detector>& newDet
   detectors_(newDetDB),
   current_spectrum_(0)
 {
+  optimizer_ = Qpx::OptimizerFactory::getInstance().create_any();
+
   ui->setupUi(this);
   this->setWindowTitle("Efficiency calib");
 
@@ -521,6 +523,9 @@ void FormEfficiencyCalibration::toggle_push() {
 
 void FormEfficiencyCalibration::on_pushFit_clicked()
 {
+  if (!optimizer_)
+    return;
+
   QVector<SelectorItem> items = ui->spectrumSelector->items();
   std::vector<double> xx, yy;
 
@@ -559,8 +564,7 @@ void FormEfficiencyCalibration::on_pushFit_clicked()
       p->add_coeff(i, -50, 50, 0);
   }
 
-  auto optimizer = std::make_shared<Qpx::OptimizerROOT>();
-  optimizer->fit(p, xx, yy, std::vector<double>(), std::vector<double>());
+  optimizer_->fit(p, xx, yy, std::vector<double>(), std::vector<double>());
 
   if (p->coeff_count())
   {
@@ -625,6 +629,9 @@ void FormEfficiencyCalibration::on_doubleScaleFactor_valueChanged(double)
 
 void FormEfficiencyCalibration::on_pushFit_2_clicked()
 {
+  if (!optimizer_)
+    return;
+
   QVector<SelectorItem> items = ui->spectrumSelector->items();
   std::vector<double> xx, yy;
 
@@ -668,8 +675,7 @@ void FormEfficiencyCalibration::on_pushFit_2_clicked()
       p->add_coeff(i, -50, 50, 0);
   }
 
-  auto optimizer = std::make_shared<Qpx::OptimizerROOT>();
-  optimizer->fit(p, xx, yy, std::vector<double>(), std::vector<double>());
+  optimizer_->fit(p, xx, yy, std::vector<double>(), std::vector<double>());
 
   if (p->coeff_count())
   {
@@ -687,6 +693,9 @@ void FormEfficiencyCalibration::on_pushFit_2_clicked()
 
 void FormEfficiencyCalibration::on_pushFitEffit_clicked()
 {
+  if (!optimizer_)
+    return;
+
   QVector<SelectorItem> items = ui->spectrumSelector->items();
   std::vector<double> xx, yy;
 
@@ -715,8 +724,7 @@ void FormEfficiencyCalibration::on_pushFitEffit_clicked()
   }
 
   auto p = std::make_shared<Effit>();
-  auto optimizer = std::make_shared<Qpx::OptimizerROOT>();
-  optimizer->fit(p, xx, yy, std::vector<double>(), std::vector<double>());
+  optimizer_->fit(p, xx, yy, std::vector<double>(), std::vector<double>());
 
 //  new_calibration_.type_ = "Efficiency";
   new_calibration_ = Calibration(fit_data_.settings().bits_);

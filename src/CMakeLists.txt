@@ -10,6 +10,9 @@ add_subdirectory(engine)
 add_subdirectory(consumers)
 add_subdirectory(producers)
 
+add_subdirectory(optimizerROOT)
+set(optimizer_LIBRARIES ${optimizerROOT_LIBRARIES})
+
 if (QPX_CMD)
   add_subdirectory(cmd)
 endif()

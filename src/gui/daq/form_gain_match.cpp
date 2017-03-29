@@ -30,7 +30,7 @@
 #include "qt_util.h"
 #include "dialog_spectrum.h"
 
-#include "optimizer_ROOT.h"
+
 
 using namespace Qpx;
 
@@ -393,7 +393,8 @@ void FormGainMatch::run_completed() {
   }
 }
 
-void FormGainMatch::do_post_processing() {
+void FormGainMatch::do_post_processing()
+{
 
   //  new_daq_data();
 
@@ -436,8 +437,8 @@ void FormGainMatch::do_post_processing() {
   if (gains.size() > 2)
     response_function_->add_coeff(2, -50, 50, 1);
 
-  auto optimizer = std::make_shared<Qpx::OptimizerROOT>();
-  optimizer->fit(response_function_, gains, positions,
+  if (auto optimizer = Qpx::OptimizerFactory::getInstance().create_any())
+    optimizer->fit(response_function_, gains, positions,
                          std::vector<double>(), std::vector<double>());
   predicted = response_function_->eval_inverse(peak_ref_.center().value() /*, ui->doubleThreshold->value() / 4.0*/);
 
