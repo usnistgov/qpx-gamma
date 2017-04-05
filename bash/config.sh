@@ -14,6 +14,11 @@ vme="off"
 parser_evt="off"
 
 hdf5="off"
+
+fitter_none="on"
+fitter_ROOT="off"
+fitter_Ceres="off"
+
 cmd="off"
 gui="off"
 
@@ -54,6 +59,19 @@ else
   if grep -q QPX_PARSER_EVT ${FILE}; then
     parser_evt="on" 
   fi
+  if grep -q QPX_FITTER_ROOT ${FILE}; then
+    fitter_none="off" 
+    fitter_ROOT="on"
+    fitter_Ceres="off"
+  elif grep -q QPX_FITTER_CERES ${FILE}; then
+    fitter_none="off" 
+    fitter_ROOT="off"
+    fitter_Ceres="on"
+  else
+    fitter_none="on" 
+    fitter_ROOT="off"
+    fitter_Ceres="off"
+  fi
 fi
 
 cmd1=(--title Options --checklist "Base program options:" 10 60 16)
@@ -73,8 +91,15 @@ options2=(
          9 "Parser for NSCL *.evt" "$parser_evt"
         )
 
+cmd3=(--and-widget --title Fitter --radiolist "Fitter:" 14 60 16)
+options3=(
+         10 "None" "$fitter_none"
+         11 "ROOT" "$fitter_ROOT"
+         12 "Ceres Solver" "$fitter_Ceres"
+        )
+
 cmd=(dialog --backtitle "QPX BUILD OPTIONS" --separate-output)
-choices=$("${cmd[@]}" "${cmd1[@]}" "${options1[@]}" "${cmd2[@]}" "${options2[@]}" 2>&1 >/dev/tty)
+choices=$("${cmd[@]}" "${cmd1[@]}" "${options1[@]}" "${cmd2[@]}" "${options2[@]}" "${cmd3[@]}" "${options3[@]}" 2>&1 >/dev/tty)
 
 if test $? -ne 0
 then
@@ -129,6 +154,12 @@ do
             ;;
         9)
             text+=$'set(QPX_PARSER_EVT TRUE PARENT_SCOPE)\n'
+            ;;
+        11)
+            text+=$'set(QPX_FITTER_ROOT TRUE PARENT_SCOPE)\n'
+            ;;
+        12)
+            text+=$'set(QPX_FITTER_CERES TRUE PARENT_SCOPE)\n'
             ;;
     esac
 done

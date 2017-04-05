@@ -54,4 +54,47 @@ std::vector<std::__cxx11::string> OptimizerFactory::types() const {
   return all_types;
 }
 
+
+void Optimizer::initial_sanity(Gaussian& gaussian,
+                               double xmin, double xmax,
+                               double ymin, double ymax)
+{
+  gaussian.bound_center(xmin, xmax);
+  gaussian.bound_height(0, ymax-ymin);
+  gaussian.bound_hwhm(0, xmax-xmin);
+}
+
+void Optimizer::sanity_check(Gaussian& gaussian,
+                             double xmin, double xmax,
+                             double ymin, double ymax)
+{
+  gaussian.constrain_center(xmin, xmax);
+  gaussian.constrain_height(0, ymax-ymin);
+  gaussian.constrain_hwhm(0, xmax-xmin);
+}
+
+void Optimizer::constrain_center(Gaussian &gaussian, double slack)
+{
+  double lateral_slack = slack * gaussian.hwhm().value().value() * 2 * sqrt(log(2));
+  gaussian.constrain_center(gaussian.center().value().value() - lateral_slack,
+                            gaussian.center().value().value() + lateral_slack);
+}
+
+void Optimizer::sanity_check(Hypermet& hyp,
+                             double xmin, double xmax,
+                             double ymin, double ymax)
+{
+  hyp.constrain_height(0, ymax-ymin);
+  hyp.constrain_center(xmin, xmax);
+  hyp.constrain_width(0, xmax-xmin);
+}
+
+void Optimizer::constrain_center(Hypermet &hyp, double slack)
+{
+  double lateral_slack = slack * hyp.width().value().value() * 2 * sqrt(log(2));
+  hyp.constrain_center(hyp.center().value().value() - lateral_slack,
+                       hyp.center().value().value() + lateral_slack);
+}
+
+
 }

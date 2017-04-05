@@ -222,24 +222,6 @@ void OptimizerROOT::get_params(Gaussian& gaussian, TF1* f, uint16_t a, uint16_t 
   gaussian.set_hwhm(get(f, w));
 }
 
-void OptimizerROOT::initial_sanity(Gaussian& gaussian,
-                               double xmin, double xmax,
-                               double ymin, double ymax)
-{
-  gaussian.bound_center(xmin, xmax);
-  gaussian.bound_height(0, ymax-ymin);
-  gaussian.bound_hwhm(0, xmax-xmin);
-}
-
-void OptimizerROOT::sanity_check(Gaussian& gaussian,
-                             double xmin, double xmax,
-                             double ymin, double ymax)
-{
-  gaussian.constrain_center(xmin, xmax);
-  gaussian.constrain_height(0, ymax-ymin);
-  gaussian.constrain_hwhm(0, xmax-xmin);
-}
-
 TH1D* OptimizerROOT::fill_hist(const std::vector<double> &x,
                            const std::vector<double> &y)
 {
@@ -312,14 +294,6 @@ std::vector<Hypermet> OptimizerROOT::fit_multiplet(const std::vector<double> &x,
     return fit_multi_commonw(x,y, old, background, settings);
   else
     return fit_multi_variw(x,y, old, background, settings);
-}
-
-
-void OptimizerROOT::constrain_center(Gaussian &gaussian, double slack)
-{
-  double lateral_slack = slack * gaussian.hwhm().value().value() * 2 * sqrt(log(2));
-  gaussian.constrain_center(gaussian.center().value().value() - lateral_slack,
-                            gaussian.center().value().value() + lateral_slack);
 }
 
 std::vector<Gaussian> OptimizerROOT::fit_multi_variw(const std::vector<double> &x,
@@ -524,22 +498,6 @@ void OptimizerROOT::get_params(Hypermet& hyp, TF1* f, uint16_t w, uint16_t other
   hyp.set_tail_amplitude(get(f, others_start+6));
   hyp.set_tail_slope(get(f, others_start+7));
   hyp.set_step_amplitude(get(f, others_start+8));
-}
-
-void OptimizerROOT::sanity_check(Hypermet& hyp,
-                             double xmin, double xmax,
-                             double ymin, double ymax)
-{
-  hyp.constrain_height(0, ymax-ymin);
-  hyp.constrain_center(xmin, xmax);
-  hyp.constrain_width(0, xmax-xmin);
-}
-
-void OptimizerROOT::constrain_center(Hypermet &hyp, double slack)
-{
-  double lateral_slack = slack * hyp.width().value().value() * 2 * sqrt(log(2));
-  hyp.constrain_center(hyp.center().value().value() - lateral_slack,
-                       hyp.center().value().value() + lateral_slack);
 }
 
 std::vector<Hypermet> OptimizerROOT::fit_multi_variw(const std::vector<double> &x,

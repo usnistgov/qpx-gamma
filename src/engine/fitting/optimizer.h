@@ -51,6 +51,24 @@ public:
                                              std::vector<Hypermet> old,
                                              Polynomial &background,
                                              FitSettings settings) = 0;
+
+protected:
+
+  static void initial_sanity(Gaussian &gaussian,
+                             double xmin, double xmax,
+                             double ymin, double ymax);
+
+  static void sanity_check(Gaussian &gaussian,
+                           double xmin, double xmax,
+                           double ymin, double ymax);
+
+  static void constrain_center(Gaussian &gaussian, double slack);
+
+  static void sanity_check(Hypermet &hyp,
+                           double xmin, double xmax,
+                           double ymin, double ymax);
+
+  static void constrain_center(Hypermet &gaussian, double slack);
 };
 
 using OptimizerPtr = std::shared_ptr<Optimizer>;

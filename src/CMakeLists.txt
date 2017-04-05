@@ -10,8 +10,15 @@ add_subdirectory(engine)
 add_subdirectory(consumers)
 add_subdirectory(producers)
 
-add_subdirectory(optimizerROOT)
-set(optimizer_LIBRARIES ${optimizerROOT_LIBRARIES})
+if (QPX_FITTER_ROOT)
+  add_subdirectory(optimizerROOT)
+  set(optimizer_LIBRARIES ${optimizerROOT_LIBRARIES})
+endif()
+
+if (QPX_FITTER_CERES)
+  add_subdirectory(optimizer_ceres)
+  set(optimizer_LIBRARIES ${optimizer_ceres_LIBRARIES})
+endif()
 
 if (QPX_CMD)
   add_subdirectory(cmd)

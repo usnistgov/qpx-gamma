@@ -84,16 +84,6 @@ private:
   static void get_params(Gaussian& gaussian, TF1* f, uint16_t start = 0);
   static void get_params(Gaussian& gaussian, TF1* f, uint16_t a, uint16_t c, uint16_t w);
 
-  static void initial_sanity(Gaussian &gaussian,
-                             double xmin, double xmax,
-                             double ymin, double ymax);
-
-  static void sanity_check(Gaussian &gaussian,
-                           double xmin, double xmax,
-                           double ymin, double ymax);
-
-  static void constrain_center(Gaussian &gaussian, double slack);
-
   static std::vector<Gaussian> fit_multi_variw(const std::vector<double> &x,
                                                const std::vector<double> &y,
                                                std::vector<Gaussian> old,
@@ -120,12 +110,6 @@ private:
   static void set_params(const Hypermet& hyp, TF1* f, uint16_t w, uint16_t others_start);
   static void get_params(Hypermet& hyp, TF1* f, uint16_t start = 0);
   static void get_params(Hypermet& hyp, TF1* f, uint16_t w, uint16_t start);
-
-  static void sanity_check(Hypermet &hyp,
-                           double xmin, double xmax,
-                           double ymin, double ymax);
-
-  static void constrain_center(Hypermet &gaussian, double slack);
 
   static std::vector<Hypermet> fit_multi_variw(const std::vector<double> &x,
                                                const std::vector<double> &y,
