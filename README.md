@@ -19,7 +19,7 @@ Features:
 * structured experiment automation
 
 Supports:
-* Linux and Mac
+* Linux (Ubuntu 16.10 recommended)and OSX
 * XIA Pixie-4
 * Radiation Technologies HV-8
 * Wiener VmUsb

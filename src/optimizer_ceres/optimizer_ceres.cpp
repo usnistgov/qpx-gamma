@@ -30,6 +30,61 @@ using ceres::Solve;
 
 namespace Qpx {
 
+inline int init_logger()
+{
+  google::InitGoogleLogging("Qpx::OptimizerCeres");
+  return 1;
+}
+
+static const int initializer = init_logger();
+
+struct GaussianResidual
+{
+  GaussianResidual(double x, double y)
+      : x_(x)
+      , y_(y)
+  {}
+
+  template <typename T>
+  bool operator()(const T* const a,
+                  const T* const c,
+                  const T* const w,
+                  T* residual) const
+  {
+    residual[0] = T(y_) - a[0] * exp(- (T(x_) - c[0]) / (w[0] * w[0]));
+    return true;
+  }
+
+ private:
+  // Observations for a sample.
+  const double x_;
+  const double y_;
+};
+
+
+struct PolyResidual
+{
+  PolyResidual(double x, double y)
+      : x_(x)
+      , y_(y)
+  {}
+
+  template <typename T>
+  bool operator()(const T* const params,
+                  T* residual) const
+  {
+    residual[0] = params[0];
+    return true;
+  }
+
+ private:
+  // Observations for a sample.
+  const double x_;
+  const double y_;
+};
+
+
+
 static OptimizerRegistrar<OptimizerCeres> registrar(std::string("Ceres"));
 
 void OptimizerCeres::fit(std::shared_ptr<CoefFunction> func,
@@ -56,26 +111,32 @@ void OptimizerCeres::fit(Gaussian& gaussian,
                          const std::vector<double> &x,
                          const std::vector<double> &y)
 {
-  google::InitGoogleLogging("qpx");
-  // The variable to solve for with its initial value. It will be
-  // mutated in place by the solver.
-//  double x = 0.5;
-  const auto initial_x = x;
-  // Build the problem.
+  if (x.size() != y.size())
+    return;
+
+  auto a = gaussian.height().value().value();
+  auto c = gaussian.center().value().value();
+  auto w = gaussian.hwhm().value().value();
   Problem problem;
-  // Set up the only cost function (also known as residual). This uses
-  // auto-differentiation to obtain the derivative (jacobian).
-  CostFunction* cost_function =
-      new AutoDiffCostFunction<GaussianResidual, 1, 1, 1, 1>(new GaussianResidual(0,0));
-//  problem.AddResidualBlock(cost_function, NULL, &x);
-  // Run the solver!
+  for (int i = 0; i < x.size(); ++i)
+  {
+    problem.AddResidualBlock(
+          new AutoDiffCostFunction<GaussianResidual, 1, 1, 1, 1>(
+            new GaussianResidual(x[i], y[i])),
+          NULL,
+          &a, &c, &w);
+  }
   Solver::Options options;
+  options.max_num_iterations = 25;
+  options.linear_solver_type = ceres::DENSE_QR;
   options.minimizer_progress_to_stdout = true;
   Solver::Summary summary;
   Solve(options, &problem, &summary);
-//  std::cout << summary.BriefReport() << "\n";
-//  std::cout << "x : " << initial_x
-//            << " -> " << x << "\n";
+  DBG << summary.BriefReport();
+  gaussian.set_height(UncertainDouble(a, 0, 4));
+  gaussian.set_center(UncertainDouble(c, 0, 4));
+  gaussian.set_hwhm(UncertainDouble(w, 0, 4));
+  DBG << "<OptimizerCeres::fit> Result: " << gaussian.to_string();
 }
 
 std::vector<Gaussian> OptimizerCeres::fit_multiplet(const std::vector<double> &x,
