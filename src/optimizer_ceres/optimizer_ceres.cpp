@@ -20,6 +20,14 @@
 #include "optimizer_ceres.h"
 #include "custom_logger.h"
 
+#include "ceres/ceres.h"
+#include "glog/logging.h"
+using ceres::AutoDiffCostFunction;
+using ceres::CostFunction;
+using ceres::Problem;
+using ceres::Solver;
+using ceres::Solve;
+
 namespace Qpx {
 
 static OptimizerRegistrar<OptimizerCeres> registrar(std::string("Ceres"));
@@ -48,7 +56,26 @@ void OptimizerCeres::fit(Gaussian& gaussian,
                          const std::vector<double> &x,
                          const std::vector<double> &y)
 {
-
+  google::InitGoogleLogging("qpx");
+  // The variable to solve for with its initial value. It will be
+  // mutated in place by the solver.
+//  double x = 0.5;
+  const auto initial_x = x;
+  // Build the problem.
+  Problem problem;
+  // Set up the only cost function (also known as residual). This uses
+  // auto-differentiation to obtain the derivative (jacobian).
+  CostFunction* cost_function =
+      new AutoDiffCostFunction<GaussianResidual, 1, 1, 1, 1>(new GaussianResidual(0,0));
+//  problem.AddResidualBlock(cost_function, NULL, &x);
+  // Run the solver!
+  Solver::Options options;
+  options.minimizer_progress_to_stdout = true;
+  Solver::Summary summary;
+  Solve(options, &problem, &summary);
+//  std::cout << summary.BriefReport() << "\n";
+//  std::cout << "x : " << initial_x
+//            << " -> " << x << "\n";
 }
 
 std::vector<Gaussian> OptimizerCeres::fit_multiplet(const std::vector<double> &x,

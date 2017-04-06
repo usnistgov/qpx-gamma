@@ -47,7 +47,8 @@ void OptimizerFactory::register_type(std::string name, std::function<Optimizer*(
   constructors[name] = typeConstructor;
 }
 
-std::vector<std::__cxx11::string> OptimizerFactory::types() const {
+std::vector<std::string> OptimizerFactory::types() const
+{
   std::vector<std::string> all_types;
   for (auto &q : constructors)
     all_types.push_back(q.first);

@@ -49,6 +49,26 @@ public:
                                       Polynomial &background,
                                       FitSettings settings) override;
 
+private:
+
+  struct GaussianResidual {
+    GaussianResidual(double x, double y)
+        : x_(x)
+        , y_(y)
+    {}
+
+    template <typename T>
+    bool operator()(const T* const a, const T* const c, const T* const w, T* residual) const {
+      residual[0] = T(y_) - a[0] * exp(- (T(x_) - c[0]) / (w[0] * w[0]));
+      return true;
+    }
+
+   private:
+    // Observations for a sample.
+    const double x_;
+    const double y_;
+  };
+
 };
 
 }
