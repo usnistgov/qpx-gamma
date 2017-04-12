@@ -46,6 +46,7 @@ inline ProducerStatus operator^(ProducerStatus a, ProducerStatus b) {return stat
 class Producer {
 
 public:
+  using SpillQueue = SynchronizedQueue<Spill*>*;
 
   Producer() : status_(ProducerStatus(0)) {}
   virtual ~Producer() {}
@@ -69,7 +70,7 @@ public:
   virtual std::list<Hit> oscilloscope() {return std::list<Hit>();}
 
   virtual bool daq_init() {return true;}
-  virtual bool daq_start(SynchronizedQueue<Spill*>* /*out_queue*/) {return false;}
+  virtual bool daq_start(SpillQueue) {return false;}
   virtual bool daq_stop() {return true;}
   virtual bool daq_running() {return false;}
 
@@ -83,6 +84,8 @@ protected:
   ProducerStatus                            status_;
   std::map<std::string, Qpx::SettingMeta> setting_definitions_;
   std::string                             profile_path_;
+
+  Setting get_rich_setting(const std::string& id) const;
 
 };
 

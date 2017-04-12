@@ -789,15 +789,18 @@ void ROI::init_background()
   //by default, linear
   double run = RB_.left() - LB_.right();
   xoffset.preset_bounds(LB_.left(), LB_.left());
-  background_.add_coeff(0, LB_.min(), LB_.max(), LB_.average());
 
   double minslope = 0, maxslope = 0;
+  double ymin, ymax, yav;
   if (LB_.average() < RB_.average())
   {
     run = RB_.right() - LB_.right();
     xoffset.preset_bounds(LB_.right(), LB_.right());
     minslope = (RB_.min() - LB_.max()) / (RB_.right() - LB_.left());
     maxslope = (RB_.max() - LB_.min()) / (RB_.left() - LB_.right());
+    ymin = LB_.min();
+    ymax = RB_.max();
+    yav = LB_.average();
   }
 
   if (RB_.average() < LB_.average())
@@ -806,11 +809,23 @@ void ROI::init_background()
     xoffset.preset_bounds(LB_.left(), LB_.left());
     minslope = (RB_.min() - LB_.max()) / (RB_.left() - LB_.right());
     maxslope = (RB_.max() - LB_.min()) / (RB_.right() - LB_.left());
+    ymin = RB_.min();
+    ymax = LB_.max();
+    yav = RB_.average();
   }
+
+  double maxcurve = (run*run - std::min(LB_.min(), RB_.min()))
+                    / std::max(LB_.max(), RB_.max());
+
+  double slope = (RB_.average() - LB_.average()) / run ;
+
   background_.set_xoffset(xoffset);
 
-  double slope = (RB_.average() - LB_.average()) / (run) ;
-  background_.add_coeff(1, minslope, maxslope, slope);
+  background_.add_coeff(0, ymin, ymax, yav);
+
+  background_.add_coeff(1, 0.5 * minslope, 2 * maxslope, slope);
+
+  background_.add_coeff(2, -maxcurve, maxcurve, 0);
 }
 
 size_t ROI::current_fit() const

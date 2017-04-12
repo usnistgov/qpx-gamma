@@ -312,9 +312,9 @@ void FormEnergyCalibration::on_pushFit_clicked()
 
   auto p = std::make_shared<Polynomial>();
   p->add_coeff(0, -50, 50, 0);
-  p->add_coeff(1,   0, 50, 1);
+  p->add_coeff(1,   0, 50, 0.5);
   for (int i=2; i <= ui->spinTerms->value(); ++i)
-    p->add_coeff(i, -5, 5, 0);
+    p->add_coeff(i, -5, 5, 0.5);
 
   optimizer->fit(p, x, y, std::vector<double>(), std::vector<double>());
 

@@ -24,7 +24,8 @@
 
 namespace Qpx {
 
-  bool Producer::load_setting_definitions(std::string file) {
+  bool Producer::load_setting_definitions(std::string file)
+  {
     pugi::xml_document doc;
 
     if (!doc.load_file(file.c_str()))
@@ -53,8 +54,8 @@ namespace Qpx {
     }
   }
 
-
-  bool Producer::save_setting_definitions(std::string file) {
+  bool Producer::save_setting_definitions(std::string file)
+  {
     pugi::xml_document doc;
 
     pugi::xml_node root = doc.append_child();
@@ -64,6 +65,14 @@ namespace Qpx {
 
     return doc.save_file(file.c_str());
   }
+
+  Setting Producer::get_rich_setting(const std::string& id) const
+  {
+    Qpx::Setting set(id);
+    set.enrich(setting_definitions_, true);
+    return set;
+  }
+
 
 }
 

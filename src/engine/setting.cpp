@@ -297,13 +297,17 @@ void Setting::delete_one_setting(const Setting &det, Setting& root, Match flags)
 {
   Setting truncated = root;
   truncated.branches.clear();
-  for (auto &q : root.branches.my_data_) {
-    if (!q.compare(det, flags)) {
-      if (q.metadata.setting_type == SettingType::stem) {
+  for (auto &q : root.branches.my_data_)
+  {
+    if (!q.compare(det, flags))
+    {
+      if (q.metadata.setting_type == SettingType::stem)
+      {
         delete_one_setting(det, q, flags);
         if (!q.branches.empty())
           truncated.branches.add_a(q);
-      } else
+      }
+      else
         truncated.branches.add_a(q);
     }
   }

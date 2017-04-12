@@ -62,18 +62,31 @@ struct GaussianResidual
 };
 
 
-struct PolyResidual
+struct Poly2Residual
 {
-  PolyResidual(double x, double y)
+  Poly2Residual(double x, double y, const CoefFunction& f)
       : x_(x)
       , y_(y)
+      , f_(f)
   {}
 
   template <typename T>
-  bool operator()(const T* const params,
+  bool operator()(const T* const p0,
+                  const T* const p1,
+                  const T* const p2,
                   T* residual) const
   {
-    residual[0] = params[0];
+    auto& pp0 = p0[0];
+    auto& pp1 = p1[0];
+    auto& pp2 = p2[0];
+
+    if ((pp0 < f_.get_coeff(0).lower()) || (pp0 > f_.get_coeff(0).upper()))
+      return false;
+    if ((pp1 < f_.get_coeff(1).lower()) || (pp1 > f_.get_coeff(1).upper()))
+      return false;
+    if ((pp2 < f_.get_coeff(2).lower()) || (pp2 > f_.get_coeff(2).upper()))
+      return false;
+    residual[0] = T(y_) - p0[0] + p1[0] * T(x_) + p2[0] * pow(T(x_),2);
     return true;
   }
 
@@ -81,6 +94,7 @@ struct PolyResidual
   // Observations for a sample.
   const double x_;
   const double y_;
+  const CoefFunction& f_;
 };
 
 
@@ -104,6 +118,31 @@ void OptimizerCeres::fit(std::shared_ptr<CoefFunction> func,
   {
 
   }
+
+  DBG << "<OptimizerCeres::fit> Initial: " << func->to_string();
+  auto p0 = func->get_coeff(0).value().value();
+  auto p1 = func->get_coeff(1).value().value();
+  auto p2 = func->get_coeff(2).value().value();
+  Problem problem;
+  for (int i = 0; i < x.size(); ++i)
+  {
+    problem.AddResidualBlock(
+          new AutoDiffCostFunction<Poly2Residual, 1, 1, 1, 1>(
+            new Poly2Residual(x[i], y[i], *func)),
+          NULL,
+          &p0, &p1, &p2);
+  }
+  Solver::Options options;
+//  options.max_num_iterations = 25;
+  options.linear_solver_type = ceres::DENSE_QR;
+//  options.minimizer_progress_to_stdout = true;
+  Solver::Summary summary;
+  Solve(options, &problem, &summary);
+  DBG << summary.BriefReport();
+  func->set_coeff(0, UncertainDouble(p0, 0, 4));
+  func->set_coeff(1, UncertainDouble(p1, 0, 4));
+  func->set_coeff(2, UncertainDouble(p2, 0, 4));
+  DBG << "<OptimizerCeres::fit> Result: " << func->to_string();
 }
 
 
