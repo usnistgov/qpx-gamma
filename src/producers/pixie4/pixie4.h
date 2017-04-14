@@ -79,6 +79,9 @@ protected:
   static void worker_run_dbl(Pixie4* callback, SpillQueue spill_queue);
 
   // Helper functions
+  bool execute_command(const std::string& id);
+  bool change_XIA_path(const std::string& xia_path);
+
   void rebuild_structure(Setting &set);
   void reindex_modules(Setting &set);
   void fill_stats(std::map<int16_t, StatsUpdate>&, uint8_t module);

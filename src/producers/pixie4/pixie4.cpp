@@ -287,10 +287,12 @@ void Pixie4::rebuild_structure(Setting &set)
     set.branches.add_a(q);
 
   auto totmod = set.get_setting(Setting("Pixie4/System/NUMBER_MODULES"), Match::id);
-  totmod.value_int = 0;
+  totmod.metadata.step = 1;
+  totmod.metadata.maximum = Pixie4Wrapper::hard_max_modules();
+  totmod.set_number(0);
   for (auto s : all_slots)
-    if (s.value_int > 0)
-      totmod.value_int++;
+    if (s.number() > 0)
+      totmod++;
   set.set_setting_r(totmod, Match::id);
 
   auto omods = set.find_all(Setting("Pixie4/System/module"), Match::id);
@@ -349,6 +351,33 @@ void Pixie4::reindex_modules(Setting &set)
   }
 }
 
+bool Pixie4::execute_command(const std::string& id)
+{
+  if (id == "Pixie4/Measure baselines")
+    return PixieAPI.control_measure_baselines();
+  else if (id == "Pixie4/Adjust offsets")
+    return PixieAPI.control_adjust_offsets();
+  else if (id == "Pixie4/Compute Tau")
+    return PixieAPI.control_find_tau();
+  else if (id == "Pixie4/Compute BLCUT")
+    return PixieAPI.control_compute_BLcut();
+  return false;
+}
+
+bool Pixie4::change_XIA_path(const std::string& xia_path)
+{
+  if (XIA_file_directory_ == xia_path)
+    return false;
+
+  boost::filesystem::path path(xia_path);
+  for (auto &f : boot_files_)
+  {
+    boost::filesystem::path full_path = path / boost::filesystem::path(f).filename();
+    f = full_path.string();
+  }
+  XIA_file_directory_ = xia_path;
+  return true;
+}
 
 bool Pixie4::write_settings_bulk(Setting &set)
 {
@@ -363,37 +392,14 @@ bool Pixie4::write_settings_bulk(Setting &set)
     if ((q.metadata.setting_type == SettingType::command) && (q.value_int == 1))
     {
       q.value_int = 0;
-      if (q.id_ == "Pixie4/Measure baselines")
-        ret = PixieAPI.control_measure_baselines();
-      else if (q.id_ == "Pixie4/Adjust offsets")
-        ret = PixieAPI.control_adjust_offsets();
-      else if (q.id_ == "Pixie4/Compute Tau")
-        ret = PixieAPI.control_find_tau();
-      else if (q.id_ == "Pixie4/Compute BLCUT")
-        ret = PixieAPI.control_compute_BLcut();
+      ret = ret && execute_command(q.id_);
     }
     else if ((q.id_ == "Pixie4/Files") && !(status_ & ProducerStatus::booted))
     {
       for (auto &k : q.branches.my_data_)
       {
-        if (k.id_ == "Pixie4/Files/XIA_path")
-        {
-          if (XIA_file_directory_ != k.value_text)
-          {
-            if (!XIA_file_directory_.empty())
-            {
-              boost::filesystem::path path(k.value_text);
-              for (auto &f : boot_files_)
-              {
-                boost::filesystem::path file(f);
-                boost::filesystem::path full_path = path / file.filename();
-                f = full_path.string();
-              }
-              break;
-            }
-            XIA_file_directory_ = k.value_text;
-          }
-        }
+        if ((k.id_ == "Pixie4/Files/XIA_path") && change_XIA_path(k.value_text))
+          break;
         else if ((k.metadata.setting_type == SettingType::file_path) &&
                  (k.metadata.address > 0) && (k.metadata.address < 8))
           boot_files_[k.metadata.address - 1] = k.value_text;

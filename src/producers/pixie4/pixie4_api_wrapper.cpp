@@ -44,6 +44,7 @@ Pixie4Wrapper::Pixie4Wrapper()
 void Pixie4Wrapper::set_num_modules(uint16_t nmod)
 {
   num_modules_ = nmod;
+  set_sys("NUMBER_MODULES", nmod);
 }
 
 void Pixie4Wrapper::get_all_settings()
