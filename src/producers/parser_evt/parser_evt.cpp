@@ -125,9 +125,12 @@ bool ParserEVT::daq_running() {
 
 
 
-bool ParserEVT::read_settings_bulk(Qpx::Setting &set) const {
-  if (set.id_ == device_name()) {
-    for (auto &q : set.branches.my_data_) {
+void ParserEVT::read_settings_bulk(Qpx::Setting &set) const
+{
+  if (set.id_ == device_name())
+  {
+    for (auto &q : set.branches.my_data_)
+    {
       if ((q.metadata.setting_type == Qpx::SettingType::boolean) && (q.id_ == "ParserEVT/Override timestamps"))
         q.value_int = override_timestamps_;
       else if ((q.metadata.setting_type == Qpx::SettingType::boolean) && (q.id_ == "ParserEVT/Loop data"))
@@ -150,17 +153,18 @@ bool ParserEVT::read_settings_bulk(Qpx::Setting &set) const {
       }
     }
   }
-  return true;
 }
 
 
-bool ParserEVT::write_settings_bulk(Qpx::Setting &set) {
+void ParserEVT::write_settings_bulk(Qpx::Setting &set)
+{
   set.enrich(setting_definitions_);
 
   if (set.id_ != device_name())
-    return false;
+    return;
 
-  for (auto &q : set.branches.my_data_) {
+  for (auto &q : set.branches.my_data_)
+  {
     if (q.id_ == "ParserEVT/Override timestamps")
       override_timestamps_ = q.value_int;
     else if (q.id_ == "ParserEVT/Loop data")
@@ -180,7 +184,6 @@ bool ParserEVT::write_settings_bulk(Qpx::Setting &set) {
     else if (q.id_ == "ParserEVT/Producer dir")
       source_dir_ = q.value_text;
   }
-  return true;
 }
 
 bool ParserEVT::boot() {

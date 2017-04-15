@@ -35,20 +35,29 @@ namespace Qpx {
     if (!root)
       return false;
 
-    for (pugi::xml_node node : root.children()) {
-      if (node.name() && (std::string(node.name()) == SettingMeta().xml_element_name())) {
+    for (pugi::xml_node node : root.children())
+    {
+      if (node.name() &&
+          (std::string(node.name()) == SettingMeta().xml_element_name()))
+      {
         SettingMeta newset(node);
         if (newset != SettingMeta())
           setting_definitions_[newset.id_] = newset;
       }
     }
 
-    if (!setting_definitions_.empty()) {
-      DBG << "<Producer> " << this->device_name() << " retrieved " << setting_definitions_.size() << " setting definitions";
+    if (!setting_definitions_.empty())
+    {
+      DBG << "<Producer> " << this->device_name()
+          << " retrieved " << setting_definitions_.size()
+          << " setting definitions";
       profile_path_ = file;
       return true;
-    } else {
-      DBG << "<Producer> " << this->device_name() << " failed to load setting definitions";
+    }
+    else
+    {
+      DBG << "<Producer> " << this->device_name()
+          << " failed to load setting definitions";
       profile_path_.clear();
       return false;
     }
@@ -57,7 +66,6 @@ namespace Qpx {
   bool Producer::save_setting_definitions(std::string file)
   {
     pugi::xml_document doc;
-
     pugi::xml_node root = doc.append_child();
     root.set_name("SettingDefinitions");
     for (auto &q : setting_definitions_)

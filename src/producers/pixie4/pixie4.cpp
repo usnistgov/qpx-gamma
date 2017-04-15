@@ -181,91 +181,106 @@ void Pixie4::fill_stats(std::map<int16_t, StatsUpdate> &all_stats, uint8_t modul
 }
 
 
-bool Pixie4::read_settings_bulk(Setting &set) const
+void Pixie4::read_settings_bulk(Setting &set) const
 {
   if (set.id_ != device_name())
-    return false;
+    return;
 
   for (auto &q : set.branches.my_data_) {
     if (set.metadata.setting_type == SettingType::command)
       set.metadata.writable =  ((status_ & ProducerStatus::booted) != 0);
 
     if (q.id_ == "Pixie4/Run settings")
-    {
-      for (auto &k : q.branches.my_data_)
-      {
-        if (k.id_ == "Pixie4/Run type")
-          k.value_int = run_setup.type;
-        if (k.id_ == "Pixie4/Poll interval")
-          k.value_int = run_setup.run_poll_interval_ms;
-      }
-    }
+      read_run_settings(q);
     else if (q.id_ == "Pixie4/Files")
-    {
-      for (auto &k : q.branches.my_data_)
-      {
-        k.metadata.writable = !(status_ & ProducerStatus::booted);
-        if (k.id_ == "Pixie4/Files/XIA_path")
-          k.value_text = XIA_file_directory_;
-        else if ((k.metadata.setting_type == SettingType::file_path) &&
-                 (k.metadata.address > 0) && (k.metadata.address < 8))
-          k.value_text = boot_files_[k.metadata.address - 1];
-      }
-    }
+      read_files(q);
     else if (q.id_ == "Pixie4/System")
+      read_system(q);
+  }
+}
+
+void Pixie4::read_run_settings(Setting &set) const
+{
+  for (auto &k : set.branches.my_data_)
+  {
+    if (k.id_ == "Pixie4/Run type")
+      k.value_int = run_setup.type;
+    if (k.id_ == "Pixie4/Poll interval")
+      k.value_int = run_setup.run_poll_interval_ms;
+  }
+}
+
+void Pixie4::read_files(Setting &set) const
+{
+  for (auto &k : set.branches.my_data_)
+  {
+    k.metadata.writable = !(status_ & ProducerStatus::booted);
+    if (k.id_ == "Pixie4/Files/XIA_path")
+      k.value_text = XIA_file_directory_;
+    else if ((k.metadata.setting_type == SettingType::file_path) &&
+             (k.metadata.address > 0) && (k.metadata.address < 8))
+      k.value_text = boot_files_[k.metadata.address - 1];
+  }
+}
+
+void Pixie4::read_system(Setting &set) const
+{
+  for (auto &k : set.branches.my_data_)
+  {
+    k.metadata.writable = (!(status_ & ProducerStatus::booted) &&
+                           setting_definitions_.count(k.id_) &&
+                           setting_definitions_.at(k.id_).writable);
+    if (k.metadata.setting_type == SettingType::stem)
+      read_module(k);
+    else
+      set_value(k, PixieAPI.get_sys(k.metadata.address));
+  }
+}
+
+void Pixie4::read_module(Setting &set) const
+{
+  int16_t modnum = set.metadata.address;
+  if (!PixieAPI.module_valid(modnum))
+  {
+    WARN << "<Pixie4> module address out of bounds, ignoring branch " << modnum;
+    return;
+  }
+  int filterrange = PixieAPI.get_mod(modnum, "FILTER_RANGE");
+  for (auto &p : set.branches.my_data_)
+  {
+    if (p.metadata.setting_type == SettingType::stem)
+      read_channel(p, modnum, filterrange);
+    else
+      set_value(p, PixieAPI.get_mod(modnum, p.metadata.address));
+  }
+}
+
+void Pixie4::read_channel(Setting &set, uint16_t modnum, int filterrange) const
+{
+  int16_t channum = set.metadata.address;
+  if (!PixieAPI.channel_valid(channum))
+  {
+    WARN << "<Pixie4> channel address out of bounds, ignoring branch " << channum;
+    return;
+  }
+  for (auto &o : set.branches.my_data_)
+  {
+    set_value(o, PixieAPI.get_chan(modnum, channum, o.metadata.address));
+    if (o.metadata.name == "ENERGY_RISETIME")
     {
-      for (auto &k : q.branches.my_data_)
-      {
-        k.metadata.writable = (!(status_ & ProducerStatus::booted) &&
-                               setting_definitions_.count(k.id_) &&
-                               setting_definitions_.at(k.id_).writable);
-        if (k.metadata.setting_type == SettingType::stem)
-        {
-          int16_t modnum = k.metadata.address;
-          if (!PixieAPI.module_valid(modnum))
-          {
-            WARN << "<Pixie4> module address out of bounds, ignoring branch " << modnum;
-            continue;
-          }
-          int filterrange = PixieAPI.get_mod(modnum, "FILTER_RANGE");
-          for (auto &p : k.branches.my_data_)
-          {
-            if (p.metadata.setting_type == SettingType::stem)
-            {
-              int16_t channum = p.metadata.address;
-              if (!PixieAPI.channel_valid(channum))
-              {
-                WARN << "<Pixie4> channel address out of bounds, ignoring branch " << channum;
-                continue;
-              }
-              for (auto &o : p.branches.my_data_)
-              {
-                set_value(o, PixieAPI.get_chan(modnum, channum, o.metadata.address));
-                if (o.metadata.name == "ENERGY_RISETIME")
-                {
-                  o.metadata.step = static_cast<double>(pow(2, filterrange)) / 75.0 ;
-                  o.metadata.minimum = 2 * o.metadata.step;
-                  o.metadata.maximum = 124 * o.metadata.step;
-                }
-                else if (o.metadata.name == "ENERGY_FLATTOP")
-                {
-                  o.metadata.step = static_cast<double>(pow(2, filterrange)) / 75.0;
-                  o.metadata.minimum = 3 * o.metadata.step;
-                  o.metadata.maximum = 125 * o.metadata.step;
-                }
-              }
-            }
-            else
-              set_value(p, PixieAPI.get_mod(modnum, p.metadata.address));
-          }
-        }
-        else
-          set_value(k, PixieAPI.get_sys(k.metadata.address));
-      }
+      o.metadata.step = static_cast<double>(pow(2, filterrange)) / 75.0 ;
+      o.metadata.minimum = 2 * o.metadata.step;
+      o.metadata.maximum = 124 * o.metadata.step;
+    }
+    else if (o.metadata.name == "ENERGY_FLATTOP")
+    {
+      o.metadata.step = static_cast<double>(pow(2, filterrange)) / 75.0;
+      o.metadata.minimum = 3 * o.metadata.step;
+      o.metadata.maximum = 125 * o.metadata.step;
     }
   }
-  return true;
 }
+
 
 void Pixie4::rebuild_structure(Setting &set)
 {
@@ -379,95 +394,109 @@ bool Pixie4::change_XIA_path(const std::string& xia_path)
   return true;
 }
 
-bool Pixie4::write_settings_bulk(Setting &set)
+void Pixie4::write_settings_bulk(Setting &set)
 {
   if (set.id_ != device_name())
-    return false;
-
-  bool ret = true;
+    return;
 
   set.enrich(setting_definitions_);
 
-  for (auto &q : set.branches.my_data_) {
+  for (auto &q : set.branches.my_data_)
+  {
     if ((q.metadata.setting_type == SettingType::command) && (q.value_int == 1))
     {
       q.value_int = 0;
-      ret = ret && execute_command(q.id_);
-    }
-    else if ((q.id_ == "Pixie4/Files") && !(status_ & ProducerStatus::booted))
-    {
-      for (auto &k : q.branches.my_data_)
-      {
-        if ((k.id_ == "Pixie4/Files/XIA_path") && change_XIA_path(k.value_text))
-          break;
-        else if ((k.metadata.setting_type == SettingType::file_path) &&
-                 (k.metadata.address > 0) && (k.metadata.address < 8))
-          boot_files_[k.metadata.address - 1] = k.value_text;
-      }
+      execute_command(q.id_);
     }
     else if (q.id_ == "Pixie4/Run settings")
-    {
-      for (auto &k : q.branches.my_data_)
-      {
-        if (k.id_ == "Pixie4/Run settings/Run type")
-          run_setup.type = k.value_int;
-        else if (k.id_ == "Pixie4/Run settings/Poll interval")
-          run_setup.run_poll_interval_ms = k.value_int;
-      }
-    }
+      write_run_settings(q);
+    else if ((q.id_ == "Pixie4/Files") && !(status_ & ProducerStatus::booted))
+      write_files(q);
     else if (q.id_ == "Pixie4/System")
-    {
-      if (!(status_ & ProducerStatus::booted))
-        rebuild_structure(q);
-
-      reindex_modules(q);
-
-      for (auto &k : q.branches.my_data_)
-      {
-        if (k.metadata.setting_type == SettingType::stem)
-        {
-          int16_t modnum = k.metadata.address;
-          if (!PixieAPI.module_valid(modnum))
-            continue;
-
-          for (auto &p : k.branches.my_data_)
-          {
-            if (p.metadata.setting_type != SettingType::stem)
-              p.indices = k.indices;
-
-            if (p.metadata.setting_type == SettingType::stem)
-            {
-              int16_t channum = p.metadata.address;
-              if (!Pixie4Wrapper::channel_valid(channum))
-                continue;
-
-              int det = -1;
-              if (!p.indices.empty())
-                det = *p.indices.begin();
-              run_setup.indices[modnum][channum] = det;
-
-              for (auto &o : p.branches.my_data_)
-              {
-                o.indices.clear();
-                o.indices.insert(det);
-
-                if (o.metadata.writable &&
-                    (PixieAPI.get_chan(modnum, channum, o.metadata.address) != get_value(o)))
-                  PixieAPI.set_chan(modnum, channum, o.metadata.name, get_value(o));
-              }
-            }
-            else if (p.metadata.writable &&
-                (PixieAPI.get_mod(modnum, p.metadata.address) != get_value(p)))
-              PixieAPI.set_mod(modnum, p.metadata.name, get_value(p));
-          }
-        }
-        else if (k.metadata.writable &&
-            (PixieAPI.get_sys(k.metadata.address) != get_value(k)))
-          PixieAPI.set_sys(k.metadata.name, get_value(k));
-      }
-    }
+      write_system(q);
   }
-  return ret;
+}
+
+void Pixie4::write_run_settings(Setting &set)
+{
+  for (auto &k : set.branches.my_data_)
+  {
+    if (k.id_ == "Pixie4/Run settings/Run type")
+      run_setup.type = k.value_int;
+    else if (k.id_ == "Pixie4/Run settings/Poll interval")
+      run_setup.run_poll_interval_ms = k.value_int;
+  }
+}
+
+void Pixie4::write_files(Setting &set)
+{
+  for (auto &k : set.branches.my_data_)
+  {
+    if ((k.id_ == "Pixie4/Files/XIA_path") && change_XIA_path(k.value_text))
+      break;
+    else if ((k.metadata.setting_type == SettingType::file_path) &&
+             (k.metadata.address > 0) && (k.metadata.address < 8))
+      boot_files_[k.metadata.address - 1] = k.value_text;
+  }
+}
+
+void Pixie4::write_system(Setting &set)
+{
+  if (!(status_ & ProducerStatus::booted))
+    rebuild_structure(set);
+
+  reindex_modules(set);
+
+  for (auto &k : set.branches.my_data_)
+  {
+    if (k.metadata.setting_type == SettingType::stem)
+      write_module(k);
+    else if (k.metadata.writable &&
+        (PixieAPI.get_sys(k.metadata.address) != get_value(k)))
+      PixieAPI.set_sys(k.metadata.name, get_value(k));
+  }
+}
+
+void Pixie4::write_module(Setting &set)
+{
+  int16_t modnum = set.metadata.address;
+  if (!PixieAPI.module_valid(modnum))
+    return;
+
+  for (auto &p : set.branches.my_data_)
+  {
+    if (p.metadata.setting_type != SettingType::stem)
+      p.indices = set.indices;
+
+    if (p.metadata.setting_type == SettingType::stem)
+      write_channel(p, modnum);
+    else if (p.metadata.writable &&
+        (PixieAPI.get_mod(modnum, p.metadata.address) != get_value(p)))
+      PixieAPI.set_mod(modnum, p.metadata.name, get_value(p));
+  }
+}
+
+
+void Pixie4::write_channel(Setting &set, uint16_t modnum)
+{
+  int16_t channum = set.metadata.address;
+  if (!Pixie4Wrapper::channel_valid(channum))
+    return;
+
+  int det = -1;
+  if (!set.indices.empty())
+    det = *set.indices.begin();
+  run_setup.indices[modnum][channum] = det;
+
+  for (auto &o : set.branches.my_data_)
+  {
+    o.indices.clear();
+    o.indices.insert(det);
+
+    if (o.metadata.writable &&
+        (PixieAPI.get_chan(modnum, channum, o.metadata.address) != get_value(o)))
+      PixieAPI.set_chan(modnum, channum, o.metadata.name, get_value(o));
+  }
 }
 
 bool Pixie4::boot()

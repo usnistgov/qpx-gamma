@@ -58,9 +58,10 @@ QpxIsegVHSPlugin::~QpxIsegVHSPlugin() {
 }
 
 
-bool QpxIsegVHSPlugin::read_settings_bulk(Qpx::Setting &set) const {
+void QpxIsegVHSPlugin::read_settings_bulk(Qpx::Setting &set) const
+{
   if (set.id_ != device_name())
-    return false;
+    return;
 
   double voltage_max = 0;
   double current_max = 0;
@@ -113,8 +114,6 @@ bool QpxIsegVHSPlugin::read_settings_bulk(Qpx::Setting &set) const {
 
     }
   }
-
-  return true;
 }
 
 void QpxIsegVHSPlugin::rebuild_structure(Qpx::Setting &set) {
@@ -157,9 +156,10 @@ void QpxIsegVHSPlugin::rebuild_structure(Qpx::Setting &set) {
 }
 
 
-bool QpxIsegVHSPlugin::write_settings_bulk(Qpx::Setting &set) {
+void QpxIsegVHSPlugin::write_settings_bulk(Qpx::Setting &set)
+{
   if (set.id_ != device_name())
-    return false;
+    return;
 
   set.enrich(setting_definitions_);
 
@@ -209,8 +209,6 @@ bool QpxIsegVHSPlugin::write_settings_bulk(Qpx::Setting &set) {
       }
     }
   }
-
-  return true;
 }
 
 

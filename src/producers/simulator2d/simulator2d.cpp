@@ -107,8 +107,10 @@ bool Simulator2D::daq_running() {
 
 
 
-bool Simulator2D::read_settings_bulk(Qpx::Setting &set) const {
-  if (set.id_ == device_name()) {
+void Simulator2D::read_settings_bulk(Qpx::Setting &set) const
+{
+  if (set.id_ == device_name())
+  {
     for (auto &q : set.branches.my_data_) {
       if (q.id_ == "Simulator2D/SpillInterval")
         q.value_int = spill_interval_;
@@ -155,19 +157,19 @@ bool Simulator2D::read_settings_bulk(Qpx::Setting &set) const {
       }
     }
   }
-  return true;
 }
 
 
-bool Simulator2D::write_settings_bulk(Qpx::Setting &set) {
-
+void Simulator2D::write_settings_bulk(Qpx::Setting &set)
+{
   if (set.id_ != device_name())
-    return false;
+    return;
 
   double timebase_multiplier = model_hit.timebase.timebase_multiplier();
   double timebase_divider = model_hit.timebase.timebase_divider();
 
-  for (auto &q : set.branches.my_data_) {
+  for (auto &q : set.branches.my_data_)
+  {
     if (q.id_ == "Simulator2D/SpillInterval")
       spill_interval_ = q.value_int;
     else if (q.id_ == "Simulator2D/Resolution")
@@ -176,13 +178,15 @@ bool Simulator2D::write_settings_bulk(Qpx::Setting &set) {
       if (bits_ > 16)
         bits_ = 16;
     }
-    else if (q.id_ == "Simulator2D/Gain0") {
+    else if (q.id_ == "Simulator2D/Gain0")
+    {
       gain0_ = q.value_dbl;
       chan0_ = -1;
       for (auto &i : q.indices)
         chan0_ = i;
     }
-    else if (q.id_ == "Simulator2D/Gain1") {
+    else if (q.id_ == "Simulator2D/Gain1")
+    {
       gain1_ = q.value_dbl;
       chan1_ = -1;
       for (auto &i : q.indices)
@@ -198,8 +202,10 @@ bool Simulator2D::write_settings_bulk(Qpx::Setting &set) {
       scale_rate_ = q.value_dbl;
     else if (q.id_ == "Simulator2D/Lambda")
       lambda_ = q.value_dbl;
-    else if (q.id_ == "Simulator2D/Producer file") {
-      if (q.value_text != source_file_) {
+    else if (q.id_ == "Simulator2D/Producer file")
+    {
+      if (q.value_text != source_file_)
+      {
         Qpx::Project temp_set;
         temp_set.open(q.value_text, true, false);
 
@@ -217,7 +223,8 @@ bool Simulator2D::write_settings_bulk(Qpx::Setting &set) {
       }
       source_file_ = q.value_text;
     }
-    else if (q.id_ == "Simulator2D/Producer spectrum") {
+    else if (q.id_ == "Simulator2D/Producer spectrum")
+    {
       if (!spectra_names_.count(q.value_int))
         q.value_int = 0;
       source_spectrum_ = q.value_int;
@@ -231,8 +238,6 @@ bool Simulator2D::write_settings_bulk(Qpx::Setting &set) {
   model_hit.tracelength = 200;
 
   set.enrich(setting_definitions_);
-
-  return true;
 }
 
 bool Simulator2D::boot() {

@@ -160,9 +160,10 @@ bool MesytecVME::die() {
 }
 
 
-bool MesytecVME::read_settings_bulk(Qpx::Setting &set) const {
+void MesytecVME::read_settings_bulk(Qpx::Setting &set) const
+{
   if (set.id_ != device_name())
-    return false;
+    return;
 
   for (auto &k : set.branches.my_data_) {
     if (k.metadata.setting_type != Qpx::SettingType::stem)
@@ -183,13 +184,12 @@ bool MesytecVME::read_settings_bulk(Qpx::Setting &set) const {
       }
     }
   }
-
-  return true;
 }
 
-bool MesytecVME::write_settings_bulk(Qpx::Setting &set) {
+void MesytecVME::write_settings_bulk(Qpx::Setting &set)
+{
   if (set.id_ != device_name())
-    return false;
+    return;
 
   set.enrich(setting_definitions_);
 
@@ -227,7 +227,6 @@ bool MesytecVME::write_settings_bulk(Qpx::Setting &set) {
       }
     }
   }
-  return true;
 }
 
 bool MesytecVME::read_setting(Qpx::Setting& set) const {

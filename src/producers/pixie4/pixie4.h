@@ -37,8 +37,8 @@ public:
   static std::string plugin_name() {return "Pixie4";}
   std::string device_name() const override {return plugin_name();}
 
-  bool write_settings_bulk(Setting &set) override;
-  bool read_settings_bulk(Setting &set) const override;
+  void write_settings_bulk(Setting &set) override;
+  void read_settings_bulk(Setting &set) const override;
   void get_all_settings() override;
   bool boot() override;
   bool die() override;
@@ -48,11 +48,6 @@ public:
   bool daq_start(SpillQueue out_queue) override;
   bool daq_stop() override;
   bool daq_running() override;
-
-private:
-  //no copying
-  void operator=(Pixie4 const&);
-  Pixie4(const Pixie4&);
 
 protected:
   Pixie4Wrapper PixieAPI;
@@ -78,18 +73,39 @@ protected:
   static void worker_parse(RunSetup setup, SpillQueue in_queue, SpillQueue out_queue);
   static void worker_run_dbl(Pixie4* callback, SpillQueue spill_queue);
 
-  // Helper functions
+  // Helpers for daq
+  void fill_stats(std::map<int16_t, StatsUpdate>&, uint8_t module);
+  static HitModel model_hit(uint16_t runtype);
+
+  // Helpers for settings
   bool execute_command(const std::string& id);
   bool change_XIA_path(const std::string& xia_path);
 
+  void read_run_settings(Setting &set) const;
+  void read_files(Setting &set) const;
+  void read_system(Setting &set) const;
+  void read_module(Setting &set) const;
+  void read_channel(Setting &set, uint16_t modnum, int filterrange) const;
+
+  void write_run_settings(Setting &set);
+  void write_files(Setting &set);
+  void write_system(Setting &set);
+  void write_module(Setting &set);
+  void write_channel(Setting &set, uint16_t modnum);
+
   void rebuild_structure(Setting &set);
   void reindex_modules(Setting &set);
-  void fill_stats(std::map<int16_t, StatsUpdate>&, uint8_t module);
   Setting default_module() const;
 
   static double get_value(const Setting& s);
   static void set_value(Setting& s, double val);
-  static HitModel model_hit(uint16_t runtype);
+
+
+private:
+  //no copying
+  void operator=(Pixie4 const&);
+  Pixie4(const Pixie4&);
+
 };
 
 }

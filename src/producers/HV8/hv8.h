@@ -39,8 +39,8 @@ public:
   static std::string plugin_name() {return "HV8";}
   std::string device_name() const override {return plugin_name();}
 
-  bool write_settings_bulk(Qpx::Setting &set) override;
-  bool read_settings_bulk(Qpx::Setting &set) const override;
+  void write_settings_bulk(Qpx::Setting &set) override;
+  void read_settings_bulk(Qpx::Setting &set) const override;
   void get_all_settings() override;
   bool boot() override;
   bool die() override;

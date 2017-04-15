@@ -85,9 +85,10 @@ void MesytecExternal::disconnect() {
   modnum_ = 0;
 }
 
-bool MesytecExternal::read_settings_bulk(Qpx::Setting &set) const {
+void MesytecExternal::read_settings_bulk(Qpx::Setting &set) const
+{
   if (set.id_ != device_name())
-    return false;
+    return;
 
   for (auto &k : set.branches.my_data_) {
     if (k.metadata.setting_type != Qpx::SettingType::stem)
@@ -102,13 +103,12 @@ bool MesytecExternal::read_settings_bulk(Qpx::Setting &set) const {
       }
     }
   }
-
-  return true;
 }
 
-bool MesytecExternal::write_settings_bulk(Qpx::Setting &set) {
+void MesytecExternal::write_settings_bulk(Qpx::Setting &set)
+{
   if (set.id_ != device_name())
-    return false;
+    return;
 
   set.enrich(setting_definitions_);
 
@@ -131,7 +131,6 @@ bool MesytecExternal::write_settings_bulk(Qpx::Setting &set) {
       }
     }
   }
-  return true;
 }
 
 bool MesytecExternal::read_setting(Qpx::Setting& set) const {

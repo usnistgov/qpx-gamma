@@ -43,8 +43,8 @@ public:
 
   bool boot() override;
   bool die() override;
-  bool write_settings_bulk(Qpx::Setting &set) override;
-  bool read_settings_bulk(Qpx::Setting &set) const override;
+  void write_settings_bulk(Qpx::Setting &set) override;
+  void read_settings_bulk(Qpx::Setting &set) const override;
 
   //VmeModule
   uint32_t baseAddressSpaceLength() const override { return MESYTEC_ADDRESS_SPACE_LENGTH; }

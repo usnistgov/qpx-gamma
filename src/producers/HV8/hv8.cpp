@@ -53,7 +53,8 @@ QpxHV8Plugin::~QpxHV8Plugin() {
 }
 
 
-bool QpxHV8Plugin::read_settings_bulk(Qpx::Setting &set) const {
+void QpxHV8Plugin::read_settings_bulk(Qpx::Setting &set) const
+{
   if (set.id_ == device_name()) {
     for (auto &q : set.branches.my_data_) {
       if ((q.metadata.setting_type == Qpx::SettingType::stem) && (q.id_ == "HV8/Channels")) {
@@ -66,7 +67,6 @@ bool QpxHV8Plugin::read_settings_bulk(Qpx::Setting &set) const {
       }
     }
   }
-  return true;
 }
 
 void QpxHV8Plugin::rebuild_structure(Qpx::Setting &set) {
@@ -104,15 +104,17 @@ void QpxHV8Plugin::rebuild_structure(Qpx::Setting &set) {
   }
 }
 
-bool QpxHV8Plugin::write_settings_bulk(Qpx::Setting &set) {
+void QpxHV8Plugin::write_settings_bulk(Qpx::Setting &set)
+{
   set.enrich(setting_definitions_, true);
 
   if (set.id_ != device_name())
-    return false;
+    return;
 
   rebuild_structure(set);
 
-  for (auto &q : set.branches.my_data_) {
+  for (auto &q : set.branches.my_data_)
+  {
     if ((q.metadata.setting_type == Qpx::SettingType::file_path) && (q.id_ == "HV8/PortName"))
       portname = q.value_text;
     else if ((q.metadata.setting_type == Qpx::SettingType::int_menu) && (q.id_ == "HV8/BaudRate"))
@@ -154,7 +156,6 @@ bool QpxHV8Plugin::write_settings_bulk(Qpx::Setting &set) {
       }
     }
   }
-  return true;
 }
 
 void QpxHV8Plugin::set_voltage(int chan, double voltage) {

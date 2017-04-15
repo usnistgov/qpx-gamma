@@ -122,15 +122,21 @@ bool QpxVmePlugin::daq_running() {
 }
 
 
-bool QpxVmePlugin::read_settings_bulk(Qpx::Setting &set) const {
+void QpxVmePlugin::read_settings_bulk(Qpx::Setting &set) const
+{
   if (set.id_ != device_name())
-    return false;
+    return;
 
-  for (auto &q : set.branches.my_data_) {
-    if (q.metadata.setting_type == Qpx::SettingType::stem) {
-      if ((q.metadata.setting_type == Qpx::SettingType::text) && (q.id_ == "VME/ControllerID")) {
+  for (auto &q : set.branches.my_data_)
+  {
+    if (q.metadata.setting_type == Qpx::SettingType::stem)
+    {
+      if ((q.metadata.setting_type == Qpx::SettingType::text)
+          && (q.id_ == "VME/ControllerID"))
+      {
         q.metadata.writable = (!(status_ & ProducerStatus::booted));
-      } else if (modules_.count(q.id_) && modules_.at(q.id_)) {
+      } else if (modules_.count(q.id_) && modules_.at(q.id_))
+      {
         modules_.at(q.id_)->read_settings_bulk(q);
       } else if (q.id_ == "VME/Registers") {
         for (auto &k : q.branches.my_data_) {
@@ -144,7 +150,7 @@ bool QpxVmePlugin::read_settings_bulk(Qpx::Setting &set) const {
       }
     }
   }
-  return true;
+  return;
 }
 
 void QpxVmePlugin::rebuild_structure(Qpx::Setting &set) {
@@ -152,9 +158,10 @@ void QpxVmePlugin::rebuild_structure(Qpx::Setting &set) {
 }
 
 
-bool QpxVmePlugin::write_settings_bulk(Qpx::Setting &set) {
+void QpxVmePlugin::write_settings_bulk(Qpx::Setting &set)
+{
   if (set.id_ != device_name())
-    return false;
+    return;
 
   set.enrich(setting_definitions_);
 
@@ -195,7 +202,6 @@ bool QpxVmePlugin::write_settings_bulk(Qpx::Setting &set) {
       }
     }
   }
-  return true;
 }
 
 

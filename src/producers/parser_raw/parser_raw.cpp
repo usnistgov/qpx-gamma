@@ -113,7 +113,8 @@ bool ParserRaw::daq_running() {
 
 
 
-bool ParserRaw::read_settings_bulk(Qpx::Setting &set) const {
+void ParserRaw::read_settings_bulk(Qpx::Setting &set) const
+{
   if (set.id_ == device_name()) {
     for (auto &q : set.branches.my_data_) {
       if ((q.metadata.setting_type == Qpx::SettingType::boolean) && (q.id_ == "ParserRaw/Override timestamps"))
@@ -144,17 +145,18 @@ bool ParserRaw::read_settings_bulk(Qpx::Setting &set) const {
       }
     }
   }
-  return true;
 }
 
 
-bool ParserRaw::write_settings_bulk(Qpx::Setting &set) {
+void ParserRaw::write_settings_bulk(Qpx::Setting &set)
+{
   set.enrich(setting_definitions_);
 
   if (set.id_ != device_name())
-    return false;
+    return;
 
-  for (auto &q : set.branches.my_data_) {
+  for (auto &q : set.branches.my_data_)
+  {
     if (q.id_ == "ParserRaw/Override timestamps")
       override_timestamps_ = q.value_int;
     else if (q.id_ == "ParserRaw/Loop data")
@@ -166,7 +168,6 @@ bool ParserRaw::write_settings_bulk(Qpx::Setting &set) {
     else if (q.id_ == "ParserRaw/Producer file")
       source_file_ = q.value_text;
   }
-  return true;
 }
 
 bool ParserRaw::boot() {

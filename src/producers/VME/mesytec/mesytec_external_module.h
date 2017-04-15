@@ -24,8 +24,8 @@ public:
   virtual uint32_t modnum() const { return modnum_; }
   virtual bool connected() const;
 
-  bool write_settings_bulk(Qpx::Setting &set) override;
-  bool read_settings_bulk(Qpx::Setting &set) const override;
+  void write_settings_bulk(Qpx::Setting &set) override;
+  void read_settings_bulk(Qpx::Setting &set) const override;
 
 protected:
   uint16_t       module_ID_code_;

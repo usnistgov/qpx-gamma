@@ -29,7 +29,8 @@
 
 namespace Qpx {
 
-enum ProducerStatus {
+enum ProducerStatus
+{
   dead      = 0,
   loaded    = 1 << 0,
   booted    = 1 << 1,
@@ -38,33 +39,34 @@ enum ProducerStatus {
   can_oscil = 1 << 4
 };
 
-inline ProducerStatus operator|(ProducerStatus a, ProducerStatus b) {return static_cast<ProducerStatus>(static_cast<int>(a) | static_cast<int>(b));}
-inline ProducerStatus operator&(ProducerStatus a, ProducerStatus b) {return static_cast<ProducerStatus>(static_cast<int>(a) & static_cast<int>(b));}
-inline ProducerStatus operator^(ProducerStatus a, ProducerStatus b) {return static_cast<ProducerStatus>(static_cast<int>(a) ^ static_cast<int>(b));}
+inline ProducerStatus operator|(ProducerStatus a, ProducerStatus b)
+  {return static_cast<ProducerStatus>(static_cast<int>(a) | static_cast<int>(b));}
+inline ProducerStatus operator&(ProducerStatus a, ProducerStatus b)
+  {return static_cast<ProducerStatus>(static_cast<int>(a) & static_cast<int>(b));}
+inline ProducerStatus operator^(ProducerStatus a, ProducerStatus b)
+  {return static_cast<ProducerStatus>(static_cast<int>(a) ^ static_cast<int>(b));}
 
 
-class Producer {
+using SpillQueue = SynchronizedQueue<Spill*>*;
 
+class Producer
+{
 public:
-  using SpillQueue = SynchronizedQueue<Spill*>*;
-
-  Producer() : status_(ProducerStatus(0)) {}
+  Producer() {}
   virtual ~Producer() {}
 
   static std::string plugin_name() {return std::string();}
-
   virtual std::string device_name() const {return std::string();}
 
   bool load_setting_definitions(std::string file);
   bool save_setting_definitions(std::string file);
 
-
   ProducerStatus status() const {return status_;}
   virtual bool boot() {return false;}
   virtual bool die() {status_ = ProducerStatus(0); return true;}
 
-  virtual bool write_settings_bulk(Qpx::Setting &/*set*/) {return false;}
-  virtual bool read_settings_bulk(Qpx::Setting &/*set*/) const {return false;}
+  virtual void write_settings_bulk(Qpx::Setting &/*set*/) {}
+  virtual void read_settings_bulk(Qpx::Setting &/*set*/) const {}
   virtual void get_all_settings() {}
 
   virtual std::list<Hit> oscilloscope() {return std::list<Hit>();}
@@ -74,18 +76,17 @@ public:
   virtual bool daq_stop() {return true;}
   virtual bool daq_running() {return false;}
 
-private:
-  //no copying
-  void operator=(Producer const&);
-  Producer(const Producer&);
-
-
 protected:
-  ProducerStatus                            status_;
+  ProducerStatus                          status_ {ProducerStatus(0)};
   std::map<std::string, Qpx::SettingMeta> setting_definitions_;
   std::string                             profile_path_;
 
   Setting get_rich_setting(const std::string& id) const;
+
+private:
+  //no copying
+  void operator=(Producer const&);
+  Producer(const Producer&);
 
 };
 
