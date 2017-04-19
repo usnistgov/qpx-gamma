@@ -27,6 +27,9 @@
 #include "spill.h"
 #include "custom_logger.h"
 
+#include "json.hpp"
+using namespace nlohmann;
+
 namespace Qpx {
 
 enum ProducerStatus
@@ -58,8 +61,11 @@ public:
   static std::string plugin_name() {return std::string();}
   virtual std::string device_name() const {return std::string();}
 
-  bool load_setting_definitions(std::string file);
-  bool save_setting_definitions(std::string file);
+  bool load_setting_definitions(const std::string& file);
+  bool save_setting_definitions(const std::string& file);
+
+  bool load_setting_json(const std::string& file);
+  bool save_setting_json(const std::string& file);
 
   ProducerStatus status() const {return status_;}
   virtual bool boot() {return false;}
