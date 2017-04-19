@@ -44,6 +44,7 @@ find_package(Boost COMPONENTS system filesystem thread timer date_time
              program_options log log_setup regex REQUIRED)
 link_directories( ${BOOST_LIBRARY_DIRS} )
 
+FIND_PACKAGE ( Threads REQUIRED )
 
 file(GLOB_RECURSE engine_SOURCES *.cpp)
 file(GLOB_RECURSE engine_HEADERS *.h *.hpp)
@@ -72,6 +73,7 @@ target_link_libraries(
   ${PROJECT_NAME}
   ${HDF5_LIBRARIES}
   ${Boost_LIBRARIES}
+  ${CMAKE_THREAD_LIBS_INIT}
 )
 
 ADD_DEPENDENCIES(${PROJECT_NAME} compiletime)
