@@ -1,4 +1,4 @@
-cmake_minimum_required(VERSION 3.1)
+cmake_minimum_required(VERSION 2.8.11 FATAL_ERROR)
 project(producer_pixie4 C CXX)
 
 if(UNIX)
@@ -26,14 +26,9 @@ link_directories( ${PROJECT_SOURCE_DIR}/PLX/Library/32bit )
 SET (PLX_LIB_DIRECTORY ${PROJECT_SOURCE_DIR}/PLX/Library/32bit)
 ENDIF( EX_PLATFORM EQUAL 64 )
 
-
-file(GLOB_RECURSE pixie4_SOURCES *.cpp XIA/*.c)
-file(GLOB_RECURSE pixie4_HEADERS *.h)
-foreach (_headerFile ${pixie4_HEADERS})
-    get_filename_component(_dir ${_headerFile} PATH)
-    list (APPEND pixie4_INCLUDE_DIRS ${_dir})
-endforeach()
-list(REMOVE_DUPLICATES pixie4_INCLUDE_DIRS)
+file(GLOB_RECURSE ${PROJECT_NAME}_SOURCES *.cpp XIA/*.c)
+file(GLOB_RECURSE ${PROJECT_NAME}_HEADERS *.h)
+dirs_of(${PROJECT_NAME}_INCLUDE_DIRS "${${PROJECT_NAME}_HEADERS}")
 
 set_source_files_properties(XIA/utilities.c PROPERTIES LANGUAGE CXX )
 set_source_files_properties(XIA/Boot.c PROPERTIES LANGUAGE CXX )
@@ -42,18 +37,21 @@ set_source_files_properties(XIA/globals.c PROPERTIES LANGUAGE CXX )
 set_source_files_properties(XIA/pixie_c.c PROPERTIES LANGUAGE CXX )
 set_source_files_properties(XIA/ua_par_io.c PROPERTIES LANGUAGE CXX )
 
-include_directories(
-  ${engine_INCLUDE_DIRS}
-  ${pixie4_INCLUDE_DIRS}
-)
-
 add_library(
   ${PROJECT_NAME}
-  ${pixie4_SOURCES}
+  ${${PROJECT_NAME}_SOURCES}
+  ${${PROJECT_NAME}_HEADERS}
+)
+
+include_directories(
+  ${PROJECT_NAME}
+  PRIVATE ${${PROJECT_NAME}_INCLUDE_DIRS}
+  PRIVATE ${engine_INCLUDE_DIRS}
 )
 
 target_link_libraries(
   ${PROJECT_NAME}
+#  ${engine_LIBRARIES}
   ${PLX_LIB_DIRECTORY}/PlxApi.a
   ${CMAKE_DL_LIBS}
 )

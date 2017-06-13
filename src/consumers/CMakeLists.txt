@@ -1,22 +1,19 @@
-cmake_minimum_required(VERSION 3.1)
+cmake_minimum_required(VERSION 2.8.11 FATAL_ERROR)
 project(consumers CXX)
 
-file(GLOB_RECURSE consumers_SOURCES *.cpp)
-file(GLOB_RECURSE consumers_HEADERS *.h)
-foreach (_headerFile ${consumers_HEADERS})
-    get_filename_component(_dir ${_headerFile} PATH)
-    list (APPEND consumers_INCLUDE_DIRS ${_dir})
-endforeach()
-list(REMOVE_DUPLICATES consumers_INCLUDE_DIRS)
-
-include_directories(
-  ${engine_INCLUDE_DIRS}
-  ${consumers_INCLUDE_DIRS}
-)
+file(GLOB_RECURSE ${PROJECT_NAME}_SOURCES *.cpp)
+file(GLOB_RECURSE ${PROJECT_NAME}_HEADERS *.h)
+dirs_of(${PROJECT_NAME}_INCLUDE_DIRS "${${PROJECT_NAME}_HEADERS}")
 
 add_library(
   ${PROJECT_NAME}
   ${consumers_SOURCES}
+)
+
+target_include_directories(
+  ${PROJECT_NAME}
+  PRIVATE ${engine_INCLUDE_DIRS}
+  PRIVATE ${consumers_INCLUDE_DIRS}
 )
 
 target_link_libraries(

@@ -1,24 +1,23 @@
-cmake_minimum_required(VERSION 3.1)
+cmake_minimum_required(VERSION 2.8.11 FATAL_ERROR)
 project(producer_simulator2d CXX)
 
-file(GLOB_RECURSE simulator2d_SOURCES *.cpp)
-file(GLOB_RECURSE simulator2d_HEADERS *.h)
-foreach (_headerFile ${simulator2d_HEADERS})
-    get_filename_component(_dir ${_headerFile} PATH)
-    list (APPEND simulator2d_INCLUDE_DIRS ${_dir})
-endforeach()
-list(REMOVE_DUPLICATES simulator2d_INCLUDE_DIRS)
-
-include_directories(
-  ${engine_INCLUDE_DIRS}
-  ${simulator2d_INCLUDE_DIRS}
-)
+file(GLOB_RECURSE ${PROJECT_NAME}_SOURCES *.cpp)
+file(GLOB_RECURSE ${PROJECT_NAME}_HEADERS *.h)
+dirs_of(${PROJECT_NAME}_INCLUDE_DIRS "${${PROJECT_NAME}_HEADERS}")
 
 add_library(
   ${PROJECT_NAME}
-  ${simulator2d_SOURCES}
+  ${${PROJECT_NAME}_SOURCES}
+  ${${PROJECT_NAME}_HEADERS}
+)
+
+include_directories(
+  ${PROJECT_NAME}
+  PRIVATE ${${PROJECT_NAME}_INCLUDE_DIRS}
+  PRIVATE ${engine_INCLUDE_DIRS}
 )
 
 target_link_libraries(
   ${PROJECT_NAME}
+#  ${engine_LIBRARIES}
 )

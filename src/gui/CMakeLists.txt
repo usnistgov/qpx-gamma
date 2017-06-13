@@ -3,7 +3,7 @@ project(qpx CXX)
 
 #For Qt
 set(CMAKE_INCLUDE_CURRENT_DIR ON)
-set(CMAKE_AUTOMOC ON)
+#set(CMAKE_AUTOMOC ON)
 set(CMAKE_AUTORCC ON)
 set(CMAKE_AUTOUIC ON)
 
@@ -13,26 +13,22 @@ find_package(OpenGL REQUIRED)
 
 add_definitions(-DQCUSTOMPLOT_USE_OPENGL)
 
-file(GLOB_RECURSE gui_SOURCES *.cpp *.h *.ui)
-file(GLOB_RECURSE gui_HEADERS *.h *.hpp ${PROJECT_BINARY_DIR}/*.h)
-foreach (_headerFile ${gui_HEADERS})
-    get_filename_component(_dir ${_headerFile} PATH)
-    list (APPEND gui_INCLUDE_DIRS ${_dir})
-endforeach()
-list(REMOVE_DUPLICATES gui_INCLUDE_DIRS)
-
-
-include_directories(
-  ${engine_INCLUDE_DIRS}
-  ${PROJECT_BINARY_DIR}
-  ${gui_INCLUDE_DIRS}
-  ${OPENGL_INCLUDE_DIR}
-)
+file(GLOB_RECURSE ${PROJECT_NAME}_SOURCES *.cpp *.qrc *.ui)
+file(GLOB_RECURSE ${PROJECT_NAME}_HEADERS *.h *.hpp ${PROJECT_BINARY_DIR}/*.h)
+dirs_of(${PROJECT_NAME}_INCLUDE_DIRS "${${PROJECT_NAME}_HEADERS}")
 
 add_executable(
   ${PROJECT_NAME}
-  ${gui_SOURCES}
-  resources/qpxres.qrc
+  ${${PROJECT_NAME}_SOURCES}
+  ${${PROJECT_NAME}_HEADERS}
+)
+
+target_include_directories(
+  ${PROJECT_NAME}
+  PRIVATE ${${PROJECT_NAME}_INCLUDE_DIRS}
+  PRIVATE ${engine_INCLUDE_DIRS}
+  PRIVATE ${PROJECT_BINARY_DIR}
+  PRIVATE ${OPENGL_INCLUDE_DIR}
 )
 
 target_link_libraries(

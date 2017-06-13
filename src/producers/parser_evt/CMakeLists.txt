@@ -1,31 +1,32 @@
-cmake_minimum_required(VERSION 3.1)
+cmake_minimum_required(VERSION 2.8.11 FATAL_ERROR)
 project(producer_parser_evt C CXX)
 
 if(UNIX)
   set(CMAKE_CXX_FLAGS "-fpermissive")
 endif()
 
-file(GLOB_RECURSE parser_evt_SOURCES *.cpp *.c)
-file(GLOB_RECURSE parser_evt_HEADERS *.h)
-foreach (_headerFile ${parser_evt_HEADERS})
-    get_filename_component(_dir ${_headerFile} PATH)
-    list (APPEND parser_evt_INCLUDE_DIRS ${_dir})
-endforeach()
-list(REMOVE_DUPLICATES parser_evt_INCLUDE_DIRS)
+file(GLOB_RECURSE ${PROJECT_NAME}_SOURCES *.cpp *.c)
+file(GLOB_RECURSE ${PROJECT_NAME}_HEADERS *.h)
+dirs_of(${PROJECT_NAME}_INCLUDE_DIRS "${${PROJECT_NAME}_HEADERS}")
 
-set_source_files_properties(nscldaq/ringitem.c PROPERTIES LANGUAGE CXX )
-
-include_directories(
-  ${engine_INCLUDE_DIRS}
-  ${producer_vme_INCLUDE_DIRS}
-  ${parser_evt_INCLUDE_DIRS}
-)
+set_source_files_properties(nscldaq/ringitem.c
+  PROPERTIES LANGUAGE CXX )
 
 add_library(
   ${PROJECT_NAME}
-  ${parser_evt_SOURCES}
+  ${${PROJECT_NAME}_SOURCES}
+  ${${PROJECT_NAME}_HEADERS}
+)
+
+include_directories(
+  ${PROJECT_NAME}
+  PRIVATE ${${PROJECT_NAME}_INCLUDE_DIRS}
+  PRIVATE ${engine_INCLUDE_DIRS}
+  PRIVATE ${producer_vme_INCLUDE_DIRS}
 )
 
 target_link_libraries(
   ${PROJECT_NAME}
+#  ${engine_LIBRARIES}
+  ${producer_vme_LIBRARIES}
 )
