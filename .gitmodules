@@ -1,3 +1,6 @@
 [submodule "src/external/json"]
 	path = src/external/json
 	url = git@github.com:nlohmann/json.git
+[submodule "src/h5/h5cc"]
+	path = src/h5/h5cc
+	url = https://github.com/ess-dmsc/h5cc.git

@@ -31,24 +31,20 @@ function(dirs_of retname file_list)
 endfunction(dirs_of)
 
 # deprecate
-#add_definitions(-DBOOST_LOG_DYN_LINK)
+add_definitions(-DBOOST_LOG_DYN_LINK)
 
 add_subdirectory(config)
-
-# HDF5 if enabled
-if (QPX_USE_HDF5)
-  message(INFO "H5 ENABLED!!!!!!!!!!!!!!!")
-  add_subdirectory(
-    ${CMAKE_CURRENT_SOURCE_DIR}/external/h5cc/source/h5cc)
-  add_definitions(-DH5_ENABLED)
-  message(STATUS "h5cc inc === " ${h5cc_INCLUDE_DIRS})
-  message(STATUS "h5cc lib === " ${h5cc_LIBRARIES})
-endif()
 
 # json++
 list (APPEND json_INCLUDE_DIRS
   ${CMAKE_CURRENT_SOURCE_DIR}/external/json/src)
 
+# HDF5 if enabled
+if (QPX_USE_HDF5)
+  add_subdirectory(h5)
+  add_definitions(-DH5_ENABLED)
+  message(INFO "H5CC DIRS = ${h5cc_INCLUDE_DIRS}")
+endif()
 
 add_subdirectory(engine)
 add_subdirectory(consumers)

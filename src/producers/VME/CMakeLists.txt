@@ -23,3 +23,8 @@ target_link_libraries(
   ${CMAKE_DL_LIBS}
   usb
 )
+
+# Expose public includes
+set(${PROJECT_NAME}_INCLUDE_DIRS
+    ${${PROJECT_NAME}_INCLUDE_DIRS}
+CACHE INTERNAL "${PROJECT_NAME}: Include Directories" FORCE)

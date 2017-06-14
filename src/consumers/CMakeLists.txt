@@ -14,10 +14,12 @@ target_include_directories(
   ${PROJECT_NAME}
   PRIVATE ${engine_INCLUDE_DIRS}
   PRIVATE ${consumers_INCLUDE_DIRS}
+  PRIVATE ${h5cc_INCLUDE_DIRS}
 )
 
 target_link_libraries(
   ${PROJECT_NAME}
+  ${h5cc_LIBRARIES}
 )
 
 set(${PROJECT_NAME}_LIBRARIES

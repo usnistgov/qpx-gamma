@@ -22,11 +22,13 @@ include_directories(
   ${PROJECT_NAME}
   PRIVATE ${${PROJECT_NAME}_INCLUDE_DIRS}
   PRIVATE ${engine_INCLUDE_DIRS}
+  PRIVATE ${h5cc_INCLUDE_DIRS}
   PRIVATE ${producer_vme_INCLUDE_DIRS}
 )
 
 target_link_libraries(
   ${PROJECT_NAME}
+  ${h5cc_LIBRARIES}
 #  ${engine_LIBRARIES}
   ${producer_vme_LIBRARIES}
 )
