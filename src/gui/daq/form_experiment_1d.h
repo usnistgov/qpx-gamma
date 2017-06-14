@@ -24,7 +24,7 @@
 
 #include <QWidget>
 #include "experiment.h"
-#include "qp_appearance.h"
+#include "QPlotAppearance.h"
 #include "experiment_filter.h"
 
 namespace Ui {

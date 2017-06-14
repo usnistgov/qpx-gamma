@@ -23,8 +23,8 @@
 #pragma once
 
 #include <QWidget>
-#include "qp_multi1d.h"
-#include "qp_appearance.h"
+#include "QPlot1D.h"
+#include "QPlotAppearance.h"
 #include <set>
 
 class WidgetPlotCalib : public QPlot::Multi1D

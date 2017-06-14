@@ -24,7 +24,7 @@
 #include <QWidget>
 #include <project.h>
 #include "widget_selector.h"
-#include "qp_multi1d.h"
+#include "QPlot1D.h"
 #include "coord.h"
 
 namespace Ui {

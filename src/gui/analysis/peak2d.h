@@ -20,7 +20,7 @@
 #include "fitter.h"
 #include <QString>
 #include "consumer.h"
-#include "qp_2d.h"
+#include "QPlot2D.h"
 
 class Bounds
 {

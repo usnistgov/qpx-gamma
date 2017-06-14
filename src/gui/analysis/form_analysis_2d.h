@@ -23,7 +23,7 @@
 #pragma once
 
 #include <QWidget>
-#include "qp_2d.h"
+#include "QPlot2D.h"
 #include "project.h"
 #include "form_multi_gates.h"
 #include "form_integration2d.h"

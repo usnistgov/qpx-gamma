@@ -186,7 +186,7 @@ void FormPlot2D::replot_markers()
 
 void FormPlot2D::addCrosshairs(Coord x, Coord y)
 {
-  std::list<QPlot::MarkerBox2D> boxes;
+  QList<QPlot::MarkerBox2D> boxes;
   QPlot::MarkerBox2D gate, gatex, gatey;
   gate.xc = x.energy();
   gate.yc = y.energy();
@@ -207,7 +207,7 @@ void FormPlot2D::addCrosshairs(Coord x, Coord y)
   gatex = gate;
   boxes.push_back(gate);
 
-  std::list<QPlot::Label2D> labels;
+  QList<QPlot::Label2D> labels;
   QPlot::Label2D label;
   if (!y.null())
   {
@@ -268,11 +268,11 @@ void FormPlot2D::update_plot(bool force)
       std::shared_ptr<EntryList> spectrum_data =
           std::move(some_spectrum->data_range({{0, adjrange}, {0, adjrange}}));
 
-      HistList2D hist;
+      QPlot::HistList2D hist;
       if (spectrum_data)
       {
         for (auto p : *spectrum_data)
-          hist.push_back(p2d(p.first.at(0), p.first.at(1), to_double(p.second)));
+          hist.push_back(QPlot::p2d(p.first.at(0), p.first.at(1), to_double(p.second)));
       }
       ui->coincPlot->updatePlot(adjrange + 1, adjrange + 1, hist);
 

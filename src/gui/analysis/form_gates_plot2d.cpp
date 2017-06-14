@@ -119,8 +119,8 @@ void FormGatesPlot2D::replot_markers()
   ui->coincPlot->clearExtras();
   //DBG << "replot markers";
 
-  std::list<QPlot::MarkerBox2D> boxes;
-  std::list<QPlot::Label2D> labels;
+  QList<QPlot::MarkerBox2D> boxes;
+  QList<QPlot::Label2D> labels;
 
   QPlot::Label2D label;
   QPlot::MarkerBox2D box;
@@ -239,11 +239,11 @@ void FormGatesPlot2D::update_plot()
     std::shared_ptr<EntryList> spectrum_data =
         std::move(some_spectrum->data_range({{0, adjrange}, {0, adjrange}}));
 
-    HistList2D hist;
+    QPlot::HistList2D hist;
     if (spectrum_data)
     {
       for (auto p : *spectrum_data)
-        hist.push_back(p2d(p.first.at(0), p.first.at(1), to_double(p.second)));
+        hist.push_back(QPlot::p2d(p.first.at(0), p.first.at(1), to_double(p.second)));
     }
 //    DBG << md.get_attribute("name").value_text << " hist size " << hist.size();
     ui->coincPlot->updatePlot(adjrange + 1, adjrange + 1, hist);

@@ -24,7 +24,7 @@
 #include <QWidget>
 #include <QSettings>
 #include <project.h>
-#include "qp_2d.h"
+#include "QPlot2D.h"
 #include "qtcolorpicker.h"
 #include "widget_selector.h"
 #include "peak2d.h"

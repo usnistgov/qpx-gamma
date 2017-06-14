@@ -22,7 +22,7 @@
 
 #pragma once
 
-#include "qp_multi1d.h"
+#include "QPlot1D.h"
 
 class RangeSelector : public QObject
 {

@@ -223,7 +223,7 @@
   <customwidget>
    <class>QPlot::Multi1D</class>
    <extends>QWidget</extends>
-   <header>qp_multi1d.h</header>
+   <header>QPlot1D.h</header>
    <container>1</container>
   </customwidget>
  </customwidgets>

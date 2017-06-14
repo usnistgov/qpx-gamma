@@ -22,7 +22,7 @@
 
 #include "form_oscilloscope.h"
 #include "ui_form_oscilloscope.h"
-#include "histogram.h"
+#include "QHist.h"
 #include <QSettings>
 
 
@@ -153,7 +153,7 @@ void FormOscilloscope::replot()
       if (!trace.trace().size())
         continue;
 
-      HistMap1D hist;
+      QPlot::HistMap1D hist;
       for (size_t j=0; j < trace.trace().size(); ++j)
         hist[trace.timestamp().to_nanosec(j) * 0.001] = trace.trace().at(j);
 

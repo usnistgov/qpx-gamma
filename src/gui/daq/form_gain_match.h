@@ -26,10 +26,9 @@
 #include "project.h"
 #include "thread_plot_signal.h"
 #include "thread_runner.h"
-#include "qp_multi1d.h"
 #include "fitter.h"
-#include "qp_appearance.h"
-
+#include "QPlot1D.h"
+#include "QPlotAppearance.h"
 
 namespace Ui {
 class FormGainMatch;

@@ -249,15 +249,15 @@
  </widget>
  <customwidgets>
   <customwidget>
-   <class>SelectorWidget</class>
+   <class>QPlot::Plot2D</class>
    <extends>QWidget</extends>
-   <header>widget_selector.h</header>
+   <header>QPlot2D.h</header>
    <container>1</container>
   </customwidget>
   <customwidget>
-   <class>QPlot::Plot2D</class>
+   <class>SelectorWidget</class>
    <extends>QWidget</extends>
-   <header>qp_2d.h</header>
+   <header>widget_selector.h</header>
    <container>1</container>
   </customwidget>
  </customwidgets>

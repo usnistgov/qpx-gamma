@@ -24,7 +24,7 @@
 #include "dialog_spectrum.h"
 #include "custom_timer.h"
 #include "boost/algorithm/string.hpp"
-#include "histogram.h"
+#include "QHist.h"
 #include "qt_util.h"
 
 using namespace Qpx;
@@ -210,7 +210,7 @@ void FormPlot1D::update_plot()
     std::shared_ptr<EntryList> spectrum_data =
         std::move(q.second->data_range({{0, x.size()}}));
 
-    HistMap1D hist;
+    QPlot::HistMap1D hist;
     for (auto it : *spectrum_data)
     {
       double xx = x[it.first[0]];
@@ -394,7 +394,7 @@ void FormPlot1D::set_markers2d(Coord x, Coord y)
 
 void FormPlot1D::replot_markers()
 {
-  std::list<QPlot::Marker1D> markers;
+  QList<QPlot::Marker1D> markers;
 
   markers.push_back(moving);
   markers.push_back(markx);

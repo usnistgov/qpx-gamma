@@ -25,7 +25,7 @@
 #include "ui_form_fitter.h"
 #include "fitter.h"
 #include "qt_util.h"
-#include "qp_button.h"
+#include "QPlotButton.h"
 #include "form_fitter_settings.h"
 #include "form_peak_info.h"
 #include "rollback_dialog.h"

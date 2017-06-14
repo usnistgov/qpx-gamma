@@ -28,7 +28,7 @@
 #include <QWidget>
 #include "project.h"
 #include "form_coinc_peaks.h"
-#include "qp_2d.h"
+#include "QPlot2D.h"
 #include "peak2d.h"
 
 namespace Ui {

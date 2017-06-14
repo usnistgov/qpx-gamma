@@ -238,7 +238,7 @@ void FormExperiment2D::display_data()
 
   bool flip90 = ytoi.size() > xtoi.size();
 
-  HistList2D hist;
+  QPlot::HistList2D hist;
   for (size_t i = 0; i < filtered_data_points_.size(); ++i)
   {
     Qpx::DataPoint &dp = filtered_data_points_.at(i);
@@ -251,7 +251,7 @@ void FormExperiment2D::display_data()
       d2 = d;
     }
 
-    hist.push_back(p2d(d1,d2,dp.dependent_variable.value()));
+    hist.push_back(QPlot::p2d(d1,d2,dp.dependent_variable.value()));
   }
 
   if (!flip90)
