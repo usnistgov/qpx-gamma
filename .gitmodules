@@ -4,3 +4,6 @@
 [submodule "src/h5/h5cc"]
 	path = src/h5/h5cc
 	url = https://github.com/ess-dmsc/h5cc.git
+[submodule "src/consumers/xylib"]
+	path = src/consumers/xylib
+	url = https://github.com/wojdyr/xylib.git
