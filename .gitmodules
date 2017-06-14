@@ -7,3 +7,6 @@
 [submodule "src/consumers/xylib"]
 	path = src/consumers/xylib
 	url = https://github.com/wojdyr/xylib.git
+[submodule "src/engine/xml"]
+	path = src/engine/xml
+	url = https://github.com/zeux/pugixml.git

@@ -32,8 +32,9 @@ find_package(Boost COMPONENTS
 
 FIND_PACKAGE ( Threads REQUIRED )
 
-file(GLOB_RECURSE ${PROJECT_NAME}_SOURCES *.cpp)
-file(GLOB_RECURSE ${PROJECT_NAME}_HEADERS *.h *.hpp)
+file(GLOB ${PROJECT_NAME}_SOURCES *.cpp fitting/*.cpp math/*.cpp xml/src/*.cpp)
+file(GLOB ${PROJECT_NAME}_HEADERS *.h *.hpp
+  fitting/*.h math/*.h xml/src/*.hpp xml/contrib/*.hpp)
 dirs_of(${PROJECT_NAME}_INCLUDE_DIRS "${${PROJECT_NAME}_HEADERS}")
 
 add_library(
