@@ -25,7 +25,7 @@
 
 namespace Qpx {
 
-bool Producer::load_setting_definitions(const std::__cxx11::string &file)
+bool Producer::load_setting_definitions(const std::string &file)
 {
   pugi::xml_document doc;
 
@@ -104,7 +104,7 @@ bool Producer::save_setting_json(const std::string& file)
     ofile << j;
 }
 
-bool Producer::save_setting_definitions(const std::__cxx11::string &file)
+bool Producer::save_setting_definitions(const std::string &file)
 {
   pugi::xml_document doc;
   pugi::xml_node root = doc.append_child();
