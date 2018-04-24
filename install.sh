@@ -16,6 +16,9 @@ echo "than boost and Qt, only standard ubuntu packages are used."
 echo " "
 read -n1 -rsp $'Press any key to continue or Ctrl+C to exit...\n'
 
+git submodule init
+git submodule update
+
 PKG_OK=$(dpkg-query -W --showformat='${Status}\n' build-essential|grep "install ok installed")
 if [ "" == "$PKG_OK" ]; then
   echo "Installing build-essential"
@@ -40,10 +43,10 @@ if [[ $getqt =~ ^(yes|y| ) ]]; then
   ./bash/get-qt.sh 5
 fi
 
-read -r -p "Install ROOT (6.08.06)? [Y/n]" getroot
+read -r -p "Install ROOT (6.12.06)? [Y/n]" getroot
 getroot=${getroot,,} # tolower
 if [[ $getroot =~ ^(yes|y| ) ]]; then
-  ./bash/get-ROOT.sh 6-08-06
+  ./bash/get-ROOT.sh 6-12-06
 fi
 
 
