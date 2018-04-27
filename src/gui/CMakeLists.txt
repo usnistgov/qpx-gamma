@@ -19,7 +19,7 @@ find_package(Qt5Widgets REQUIRED)
 find_package(OpenGL REQUIRED)
 add_definitions(-DQCUSTOMPLOT_USE_OPENGL)
 
-file(GLOB ${PROJECT_NAME}_RESOURCES resources/*.qrc)
+file(GLOB ${PROJECT_NAME}_RESOURCES resources/*.qrc qplot/src/qplot/icons.qrc)
 file(GLOB ${PROJECT_NAME}_SOURCES *.cpp *.ui
   analysis/*.cpp analysis/*.ui
   daq/*.cpp daq/*.ui

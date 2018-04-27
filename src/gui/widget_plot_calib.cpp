@@ -42,8 +42,8 @@ WidgetPlotCalib::WidgetPlotCalib(QWidget *parent) :
   setPlotStyle("Lines");
   setGridStyle("Grid + subgrid");
 
-  setVisibleOptions(QPlot::ShowOptions::zoom | QPlot::ShowOptions::save |
-                    QPlot::ShowOptions::scale | QPlot::ShowOptions::title);
+  setVisibleOptions(QPlot::ShowOption::zoom | QPlot::ShowOption::save |
+                    QPlot::ShowOption::scale | QPlot::ShowOption::title);
   replotExtras();
 }
 

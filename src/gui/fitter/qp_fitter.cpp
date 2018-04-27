@@ -31,8 +31,8 @@ QpFitter::QpFitter(QWidget *parent)
   range_ = new RangeSelector(this);
   connect (range_, SIGNAL(stoppedMoving()), this, SLOT(update_range_selection()));
 
-  setVisibleOptions(QPlot::ShowOptions::zoom | QPlot::ShowOptions::save |
-                    QPlot::ShowOptions::scale | QPlot::ShowOptions::title);
+  setVisibleOptions(QPlot::ShowOption::zoom | QPlot::ShowOption::save |
+                    QPlot::ShowOption::scale | QPlot::ShowOption::title);
 
   connect(this, SIGNAL(selectionChangedByUser()), this, SLOT(selection_changed()));
 

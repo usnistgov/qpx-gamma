@@ -184,7 +184,6 @@ void FormPlot1D::reset_content()
 
 void FormPlot1D::update_plot()
 {
-  this->setCursor(Qt::WaitCursor);
   //  CustomTimer guiside(true);
 
   calib_ = Calibration();
@@ -241,8 +240,6 @@ void FormPlot1D::update_plot()
   ui->mcaPlot->setAxisLabels(QString::fromStdString(calib_.units()),
                              ui->pushPerLive->isChecked() ? "cps" : "count");
 
-  replot_markers();
-
   std::string new_label = boost::algorithm::trim_copy(mySpectra->identity());
   ui->mcaPlot->setTitle(QString::fromStdString(new_label));
 
@@ -254,8 +251,9 @@ void FormPlot1D::update_plot()
     nonempty_ = (numvisible > 0);
   }
 
+  replot_markers();
+
   //  DBG << "<Plot1D> plotting took " << guiside.ms() << " ms";
-  this->setCursor(Qt::ArrowCursor);
 }
 
 void FormPlot1D::on_pushFullInfo_clicked()
@@ -390,21 +388,24 @@ void FormPlot1D::set_markers2d(Coord x, Coord y)
     moving.visible = false;
 
   replot_markers();
+  refresh();
+}
+
+void FormPlot1D::refresh()
+{
+  ui->mcaPlot->replot(QCustomPlot::rpQueuedRefresh);
 }
 
 void FormPlot1D::replot_markers()
 {
   QList<QPlot::Marker1D> markers;
-
   markers.push_back(moving);
   markers.push_back(markx);
   markers.push_back(marky);
-
   ui->mcaPlot->setMarkers(markers);
-  ui->mcaPlot->replotExtras();
-  ui->mcaPlot->replot();
-}
 
+  ui->mcaPlot->replotExtras();
+}
 
 void FormPlot1D::showAll()
 {

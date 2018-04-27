@@ -98,7 +98,7 @@ void FormPlot2D::spectrumDoubleclicked(SelectorItem /*item*/)
 }
 
 void FormPlot2D::crop_changed() {
-  DBG << "changing zoom";
+//  DBG << "changing zoom";
   new_zoom = crop_slider_->value() / 100.0;
   ui->toolCrop->setText(QString::number(crop_slider_->value()) + "% ");
   if (this->isVisible() && (mySpectra != nullptr))
@@ -172,7 +172,7 @@ void FormPlot2D::updateUI()
 
 void FormPlot2D::refresh()
 {
-  ui->coincPlot->replot();
+  ui->coincPlot->replot(QCustomPlot::rpQueuedRefresh);
 }
 
 void FormPlot2D::replot_markers()
@@ -181,7 +181,7 @@ void FormPlot2D::replot_markers()
   addCrosshairs(x_marker, y_marker);
   addCrosshairs(ext_marker, ext_marker);
   ui->coincPlot->replotExtras();
-  ui->coincPlot->replot();
+//  ui->coincPlot->replot();
 }
 
 void FormPlot2D::addCrosshairs(Coord x, Coord y)
@@ -234,7 +234,6 @@ void FormPlot2D::update_plot(bool force)
 {
 //  DBG << "updating 2d";
 
-  this->setCursor(Qt::WaitCursor);
   CustomTimer guiside(true);
 
   bool new_data = mySpectra->new_data();
@@ -271,10 +270,11 @@ void FormPlot2D::update_plot(bool force)
       QPlot::HistList2D hist;
       if (spectrum_data)
       {
-        for (auto p : *spectrum_data)
+        for (const auto& p : *spectrum_data)
           hist.push_back(QPlot::p2d(p.first.at(0), p.first.at(1), to_double(p.second)));
       }
-      ui->coincPlot->updatePlot(adjrange + 1, adjrange + 1, hist);
+
+      ui->coincPlot->clearData();
 
       if (rescale2d || force)
       {
@@ -299,6 +299,7 @@ void FormPlot2D::update_plot(bool force)
               "Event count");
       }
 
+      ui->coincPlot->updatePlot(adjrange + 1, adjrange + 1, hist);
     }
     else
     {
@@ -310,7 +311,6 @@ void FormPlot2D::update_plot(bool force)
   }
 
 //  DBG << "<Plot2D> plotting took " << guiside.ms() << " ms";
-  this->setCursor(Qt::ArrowCursor);
 }
 
 void FormPlot2D::markers_moved(double x, double y, Qt::MouseButton b)

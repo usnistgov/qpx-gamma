@@ -45,6 +45,7 @@ public:
   void updateUI();
 
   void update_plot();
+  void refresh();
 
   void replot_markers();
   void reset_content();

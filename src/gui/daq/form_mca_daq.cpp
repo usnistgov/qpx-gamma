@@ -279,17 +279,20 @@ void FormMcaDaq::update_plots()
 
   ui->pushEditSpectra->setVisible(project_->empty());
 
-  if (ui->Plot2d->isVisible())
-  {
+  if (ui->Plot2d->isVisible() || ui->Plot1d->isVisible())
     this->setCursor(Qt::WaitCursor);
+
+  if (ui->Plot2d->isVisible())
     ui->Plot2d->update_plot();
-  }
 
   if (ui->Plot1d->isVisible())
-  {
-    this->setCursor(Qt::WaitCursor);
     ui->Plot1d->update_plot();
-  }
+
+  if (ui->Plot1d->isVisible())
+    ui->Plot1d->refresh();
+
+  if (ui->Plot2d->isVisible())
+    ui->Plot2d->refresh();
 
   //ui->statusBar->showMessage("Spectra acquisition in progress...");
 //  DBG << "<FormMcaDaq> Gui-side plotting " << guiside.ms() << " ms";
