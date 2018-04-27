@@ -13,22 +13,11 @@
 	     Michigan State University
 	     East Lansing, MI 48824-1321
 */
-#ifndef __IO_H
-#define __IO_H
 
-#ifndef __CRT_UNISTD_H
+#pragma once
+
 #include <unistd.h>
-#ifndef __CRT_UNISTD_H
-#define __CRT_UNISTD_H
-#endif
-#endif
-
-#ifndef __CRT_STDINT_H
 #include <stdint.h>
-#ifndef __CRT_STDINT_H
-#define __CRT_STDINT_H
-#endif
-#endif
 
 /**
  * @file io.h
@@ -40,6 +29,3 @@ namespace io {
   void writeData (int fd, const void* pData , size_t size);
   size_t readData (int fd, void* pBuffer,  size_t nBytes);
 }
-
-
-#endif

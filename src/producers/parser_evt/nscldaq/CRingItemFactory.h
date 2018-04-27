@@ -15,8 +15,7 @@
 */
 
 
-#ifndef __CRINGITEMFACTORY_H
-#define __CRINGITEMFACTORY_H
+#pragma once
 
 class CRingItem;
 
@@ -34,5 +33,3 @@ public:
   static CRingItem* createRingItem(const void*     pItem);
   static bool   isKnownItemType(const void* pItem);
 };
-
-#endif

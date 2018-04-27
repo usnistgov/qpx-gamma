@@ -1,5 +1,4 @@
-#ifndef DAQHWYNET_URL_H
-#define DAQHWYNET_URL_H
+#pragma once
 
 /*=========================================================================*\
 | Copyright (C) 2007 by the Board of Trustees of Michigan State University. |
@@ -14,15 +13,7 @@
 #include <sys/types.h>
 #include <string.h>
 #include <errno.h>
-
-
-#ifndef __STL_STRING
 #include <string>
-#ifndef __STL_STRING
-#define __STL_STRING
-#endif
-#endif
-
 
 /**
 * @class URL
@@ -81,6 +72,3 @@ private:
 
 
 };
-
-
-#endif

@@ -31,19 +31,29 @@ if [ "" == "$PKG_OK" ]; then
   sudo apt-get --yes install cmake
 fi
 
-read -r -p "Install boost (>=1.58)? [Y/n]" getboost
+echo "---¿¿¿ install boost ???---"
+echo "qpx requires boost, version 1.58 at the minimum."
+echo "If you know that you already have boost installed, you may not need to install it now."
+read -r -p "Do you want to install boost? [Y/n]" getboost
 getboost=${getboost,,} # tolower
 if [[ $getboost =~ ^(yes|y| ) ]]; then
  ./bash/get-boost.sh 58
 fi
 
-read -r -p "Install Qt (>=5.5)? [Y/n]" getqt
+echo "---¿¿¿ install Qt ???---"
+echo "qpx uses Qt for the graphical user interface. If you intend to use the graphical interface, you"
+echo "will need Qt. If you know that you already have Qt installed, you may not need to install it now."
+read -r -p "Do you want to install Qt? [Y/n]" getqt
 getqt=${getqt,,} # tolower
 if [[ $getqt =~ ^(yes|y| ) ]]; then
   ./bash/get-qt.sh 5
 fi
 
-read -r -p "Install ROOT (6.12.06)? [Y/n]" getroot
+echo "---¿¿¿ install ROOT ???---"
+echo "qpx can do some experimental peak fitting using CERN's ROOT framework for nonlinear optimization."
+echo "If you already have ROOT, you may not need to install it. If you don't intend to use qpx's"
+echo "experimental peak fitting, then you may also not need this."
+read -r -p "Do you want to install ROOT (6.12.06)? [Y/n]" getroot
 getroot=${getroot,,} # tolower
 if [[ $getroot =~ ^(yes|y| ) ]]; then
   ./bash/get-ROOT.sh 6-12-06
@@ -57,18 +67,22 @@ DESTDIR=$HOME/qpx
 mkdir $DESTDIR
 cp -ur $SOURCEDIR $DESTDIR
 
-read -r -p "Make release & install qpx? [Y/n]" mkrelease
+read -r -p "Build qpx now? [Y/n]" mkrelease
 mkrelease=${mkrelease,,} # tolower
 
 if [[ $mkrelease =~ ^(yes|y| ) ]]; then
   mkdir build
   cd build
-  cmake ../src
+  cmake -DCMAKE_BUILD_TYPE=Release ../src
   make -j$(nproc)
   if [ $? -eq 0 ]
   then
-    sudo make install
-    echo " "
-    echo "Release version compiled and installed. To start qpx, you may run 'qpx' from anywhere in the system."
+    read -r -p "Built successfully. Install qpx to system? [Y/n]" mkinstall
+    mkinstall=${mkinstall,,} # tolower
+    if [[ $mkinstall =~ ^(yes|y| ) ]]; then
+      sudo make install
+      echo " "
+      echo "Release version compiled and installed. To start qpx, you may run 'qpx' from anywhere in the system."
+    fi
   fi
 fi

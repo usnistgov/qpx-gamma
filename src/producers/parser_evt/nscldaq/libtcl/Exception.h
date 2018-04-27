@@ -30,13 +30,8 @@
 //
 /////////////////////////////////////////////////////////////
 
-#ifndef __EXCEPTION_H  //Required for current class
-#define __EXCEPTION_H
-
-#ifndef __STL_STRING
+#pragma once
 #include <string>
-#define __STL_STRING
-#endif
 
 #define kACTIONSIZE 1024 // Size of action message.
                                
@@ -97,6 +92,3 @@ protected:
 
   virtual void DoAssign(const CException& rhs);
 };
-
-
-#endif

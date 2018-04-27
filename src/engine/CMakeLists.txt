@@ -61,9 +61,6 @@ target_link_libraries(
 
 ADD_DEPENDENCIES(${PROJECT_NAME} compiletime)
 
-message(STATUS "H5CC LIBS ===== " ${h5cc_INCLUDE_DIRS})
-message(STATUS "json LIBS ===== " ${json_INCLUDE_DIRS})
-
 # Expose public includes
 set(${PROJECT_NAME}_INCLUDE_DIRS
     ${${PROJECT_NAME}_INCLUDE_DIRS}

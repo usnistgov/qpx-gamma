@@ -43,7 +43,6 @@ list (APPEND json_INCLUDE_DIRS
 if (QPX_USE_HDF5)
   add_subdirectory(h5)
   add_definitions(-DH5_ENABLED)
-  message(INFO "H5CC DIRS = ${h5cc_INCLUDE_DIRS}")
 endif()
 
 add_subdirectory(engine)

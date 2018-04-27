@@ -14,20 +14,10 @@
 	     East Lansing, MI 48824-1321
 */
 
-#ifndef __CRINGFRAGMENTITEM_H
-#define __CRINGFRAGMENTITEM_H
+#pragma once
 
-#ifndef __CRINGITEM_H
 #include "CRingItem.h"
-#endif
-
-#ifndef __CPPRTL_TYPEINFO
 #include <typeinfo>
-#ifndef __CPPRTL_TYPEINFO
-#define __CPPRTL_TYPEINFO
-#endif
-#endif
-
 
 
 // Forward definitions.
@@ -79,5 +69,3 @@ private:
   void   copyPayload(const void* pPayloadSource, size_t payloadSize);
   void   init(size_t size);
 };
-
-#endif

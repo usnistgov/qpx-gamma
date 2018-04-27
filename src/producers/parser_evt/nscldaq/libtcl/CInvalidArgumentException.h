@@ -14,12 +14,10 @@
              East Lansing, MI 48824-1321
 */
 
-#ifndef __CINVALIDARGUMENTEXCEPTION_H
-#define __CINVALIDARGUMENTEXCEPTION_H
+#pragma once
 
-#ifndef __EXCEPTION_H
 #include <Exception.h>
-#endif
+
 
 /*!
  *  This class is ressponsible for reporting exceptions that 
@@ -54,5 +52,3 @@ public:
     
     virtual const char* ReasonText() const;
 };
-
-#endif

@@ -1,5 +1,4 @@
-#ifndef __CDATASOURCE_H
-#define __CDATASOURCE_H
+#pragma once
 /*
     This software is Copyright by the Board of Trustees of Michigan
     State University (c) Copyright 2005.
@@ -53,5 +52,3 @@ public:
 
 
 };
-
-#endif

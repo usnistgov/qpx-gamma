@@ -31,22 +31,11 @@
 //
 /////////////////////////////////////////////////////////////
 
-#ifndef __ERRNOEXCEPTION_H  //Required for current class
-#define __ERRNOEXCEPTION_H
+#pragma once
                                //Required for base classes
-#ifndef __EXCEPTION_H
 #include "Exception.h"
-#endif                               
-  
-#ifndef __CRTL_ERRNO_H
 #include <errno.h>
-#define __CRTL_ERRNO_H
-#endif
-                           
-#ifndef __STL_STRING
 #include <string>
-#define __STL_STRING
-#endif
 
   
 class CErrnoException  : public CException        
@@ -116,18 +105,4 @@ public:
   virtual   int       ReasonCode () const  ;
  
 };
-
-#endif
-
-
-
-
-
-
-
-
-
-
-
-
 

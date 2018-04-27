@@ -33,18 +33,11 @@
                         CrangeError.h from now on
 */
 
-
-#ifndef __CRANGEERROR_H  //Required for current class
-#define __CRANGEERROR_H
+#pragma once
                                //Required for base classes
-#ifndef __CEXCEPTION_H
 #include "Exception.h"
-#endif                             
-#ifndef __STL_STRING
 #include <string>
-#define __STL_STRING
-#endif  
-                               
+
 class CRangeError  : public CException        
 {
   int m_nLow;			// Lowest allowed value for range (inclusive).
@@ -169,4 +162,3 @@ protected:
   void UpdateReason();
 };
 
-#endif

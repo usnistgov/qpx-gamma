@@ -19,12 +19,9 @@
 # @brief  Define the wrapper class for the abnormal end run ring item.
 # @author <fox@nscl.msu.edu>
 */
-#ifndef __CABNORMALENDITEM_H
-#define __CABNORMALENDITEM_H
+#pragma once
 
-#ifndef __CRINGITEM_H
 #include "CRingItem.h"
-#endif
 
 class CAbnormalEndItem : public CRingItem
 {
@@ -49,5 +46,3 @@ public:
     virtual std::string toString() const;
 };
 
-
-#endif
