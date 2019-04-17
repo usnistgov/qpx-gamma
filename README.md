@@ -39,11 +39,15 @@ Installing / running:
 * Start with `git clone https://github.com/usnistgov/qpx-gamma.git`
 * `./first_build.sh` will install necessary dependencies, build qpx and 
 it will also copy default configuration and sample data files to ~/qpx/
-* If using Pixie-4, make sure PLX driver is working (driver and installation script included, see /sources/pixie4/PLX/README)
+* If using Pixie-4, make sure PLX driver is working (driver and installation script included, see
+[src/producers/pixie4/PLX/README](src/producers/pixie4/PLX/README))
 * Install script only guaranteed on recent Ubuntu systems. For OSX, you should install the dependencies (boost and Qt) yourself. Examine the Ubuntu scripts for ideas.
 
-[Upcoming/ToDo](https://trello.com/b/YKb96auO/qpx-todo-list)
 
-For questions, contact:
+This project is no longer being actively maintained. You are welcome to fork it
+and develop it further. There is a list of features that we were planning to work on 
+[here](https://trello.com/b/YKb96auO/qpx-todo-list).
+
+If you have questions, please contact:
 <br>   Martin Shetty (martin.shetty@esss.se)
 <br>   Dagistan Sahin (dagistan.sahin@nist.gov)
