@@ -3,7 +3,7 @@
 Data acquisition and analysis software for multi-detector gamma spectroscopy.
 Developed at NIST. No warranty and no endorsement of specific product. Please read license and disclaimer.
 
-![qpx-gamma](/screenshot.png)
+![qpx-gamma](screenshot.png)
 
 Features:
 * simultaneous building of multiple spectra (real-time sorting)
@@ -18,8 +18,11 @@ Features:
 * automatic digitizer setting optimization to minimize FWHM
 * structured experiment automation
 
+Runs on:
+* Linux (Ubuntu 18.04 LTS recommended)
+* macOS
+
 Supports:
-* Linux (Ubuntu 16.10 recommended)and OSX
 * XIA Pixie-4
 * Radiation Technologies HV-8
 * Wiener VmUsb
@@ -33,13 +36,11 @@ Reads:
 * NSCLdaq evt
 
 Installing / running:
-* './install.sh' will also download and install [boost](http://www.boost.org/),
- [Qt](http://www.qt.io/), and [ROOT](https://root.cern.ch/) dependencies, and 
-copy default configuration and sample data files to ~/qpx/
-* When prompted, the safe choices are boost 1.58 and Qt 5.5. Experimental with more recent libraries.
+* Start with `git clone https://github.com/usnistgov/qpx-gamma.git`
+* `./first_build.sh` will install necessary dependencies, build qpx and 
+it will also copy default configuration and sample data files to ~/qpx/
 * If using Pixie-4, make sure PLX driver is working (driver and installation script included, see /sources/pixie4/PLX/README)
-* to run: './qpx' or debug mode 'gdb ./qpxd'
-* Install script only guaranteed on recent Ubuntu systems. For OSX, you should install the dependencies yourself.
+* Install script only guaranteed on recent Ubuntu systems. For OSX, you should install the dependencies (boost and Qt) yourself. Examine the Ubuntu scripts for ideas.
 
 [Upcoming/ToDo](https://trello.com/b/YKb96auO/qpx-todo-list)
 

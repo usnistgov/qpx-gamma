@@ -1,5 +1,10 @@
 #!/bin/bash
 
+#ensure that we are in the script directory
+pushd $(dirname "${BASH_SOURCE[0]}")
+
+. ./bash/numcpus.sh
+
 echo "-------------------------"
 echo "---===================---"
 echo "---=== QPX UPDATER ===---"
@@ -28,16 +33,6 @@ if [[ $mkrelease =~ ^(yes|y| ) ]]; then
 
   mkdir -p build
   cd build
-  cmake -DCMAKE_BUILD_TYPE=Release ../src
-  make -j$(nproc)
-  if [ $? -eq 0 ]
-  then
-    read -r -p "Built successfully. Install qpx to system? [Y/n]" mkinstall
-    mkinstall=${mkinstall,,} # tolower
-    if [[ $mkinstall =~ ^(yes|y| ) ]]; then
-      sudo make install
-      echo " "
-      echo "Release version compiled and installed. To start qpx, you may run 'qpx' from anywhere in the system."
-    fi
-  fi
+  cmake -DCMAKE_BUILD_TYPE=Release ../src || exit 1
+  make -j$NUMCPUS || exit 1
 fi
